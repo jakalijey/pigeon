@@ -4,10 +4,11 @@ import { playEvent } from './events.js?v=3';
 import qrcode from 'qrcode-generator';
 
 const host = window.nimiqPay?.language || navigator.language || 'en';
-const lang = host.toLowerCase().startsWith('tr') ? 'tr' : 'en';
+const pickLang = (l) => (String(l || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
+let lang = pickLang(host);
 document.documentElement.lang = lang;
 
-const T = {
+const TEXTS = {
   en: {
     app: 'Pigeon', tagline: 'Nimiq’s new form', send: 'Send', request: 'Request', split: 'Split', ring: 'Get ring',
     noRing: 'No ring yet', letters: 'Letters for you', noLetters: 'No letters this week.',
@@ -58,7 +59,11 @@ const T = {
     evSplit: (k, n) => `${k}/${n} ödedi`, evSplitWait: (n) => `Bekleyen pul: ${n}`, evSplitAll: 'Bütün pullar damgalandı', evRingSub: (n) => `Yeni adın: ${n}`, paidWord: 'ÖDENDİ',
     rejected: 'Cüzdanda vazgeçildi', failed: 'Bir şey ters gitti', notFound: 'Bulunamadı', tooLong: 'Not çok uzun',
   },
-}[lang];
+};
+let T = TEXTS[lang];
+function setLang(l) { if (!l || pickLang(l) === lang) return; lang = pickLang(l); T = TEXTS[lang]; document.documentElement.lang = lang; }
+const markPay = () => document.documentElement.classList.add('inpay');
+if (window.nimiq || window.nimiqPay || window.ReactNativeWebView) markPay();
 
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const API = LOCAL ? '' : 'https://signal.heylogram.tv/pigeonapi';
@@ -133,6 +138,7 @@ const bridge = (() => {
       const v = e.data;
       if (e.source !== window.parent || v?.tur !== 'hl-nimiq' || v.islem !== 'durum') return;
       removeEventListener('message', on); clearInterval(again); clearTimeout(stop);
+      if (v.var) { markPay(); setLang(v.dil); }
       resolve(v.var ? provider : null);
     };
     addEventListener('message', on);
