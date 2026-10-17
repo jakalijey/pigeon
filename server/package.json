@@ -1,0 +1,18 @@
+{
+  "name": "nim-names",
+  "version": "0.1.0",
+  "description": "Pay anyone on Nimiq by name: .nim names, payment requests and bill splitting.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node rules.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@nimiq/core": "^2.22.0",
+    "@nimiq/identicons": "^1.6.2"
+  }
+}

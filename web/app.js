@@ -1,0 +1,521 @@
+import { perched, flying, logo, postmark } from './pigeon.js?v=2';
+import { playSplash } from './splash.js?v=2';
+import { playEvent } from './events.js?v=3';
+import qrcode from 'qrcode-generator';
+
+const host = window.nimiqPay?.language || navigator.language || 'en';
+const lang = host.toLowerCase().startsWith('tr') ? 'tr' : 'en';
+document.documentElement.lang = lang;
+
+const T = {
+  en: {
+    app: 'Pigeon', tagline: 'Nimiq’s new form', send: 'Send', request: 'Request', split: 'Split', ring: 'Get ring',
+    noRing: 'No ring yet', letters: 'Letters for you', noLetters: 'No letters this week.',
+    openInPay: 'Open this app in Nimiq Pay to send and receive.', retry: 'Try again', flyHome: 'Pigeon flies inside the Nimiq Pay wallet.', scanQr: 'Scan with your phone and Pigeon opens in Nimiq Pay.', openPay: 'Open in Nimiq Pay', noPay: 'No Nimiq Pay yet?', connecting: 'Reaching the Nimiq network…', walletWait: 'Connecting to Nimiq Pay…',
+    write: 'Write a letter', to: 'TO', toHint: 'name.nim or NQ address', ringOk: 'Ring matches', plain: 'Plain address, no ring', noName: 'Nobody wears this ring',
+    stampHint: 'The picture on the stamp belongs to this address. Check it matches the one on your friend’s screen.',
+    notePh: 'Add a note', noteHint: 'The note is written on chain. Anyone can read it.', seal: 'Seal and fly', sending: 'Waiting for your wallet…',
+    delivered: 'DELIVERED · NIMIQ POST · ', note: 'Note', fee: 'Fee', tx: 'Transaction', share: 'Share', done: 'Done',
+    tie: 'Tie a note to its leg', amount: 'AMOUNT', what: 'WHAT FOR', create: 'Tie the note',
+    reqHint: 'Whoever gets the link sees your pigeon at their window. When they pay, it flies back to you.',
+    copy: 'Copy', copied: 'Copied', waiting: 'Waiting', paid: 'Paid', partial: 'Part paid', atWindow: 'Pigeon at the window', back: 'Back to you',
+    splitT: 'Split the letter', people: 'WHO PAYS', addPerson: 'name.nim or a name', add: 'Add', includeMe: 'I pay a share too', splitIt: 'Tear into stamps',
+    stampsOf: (n, s, k) => `${n} stamps · ${s} NIM each · ${k}/${n} stamped`, nudge: 'Remind', splitHint: 'Every person who pays gets a postmark on their stamp. When all are stamped, the letter is complete.',
+    paidMark: 'PAID · PAID · ', sentYou: 'sent you a letter', ringIs: (n) => `Ring matches ${n}`, noRingWarn: 'No ring. Check the address with them.',
+    notNow: 'Not now', pay: 'Pay', alreadyPaid: 'This letter is already paid.',
+    fakeT: (n) => `This pigeon is not ${n}.nim`, fakeP: (n) => `The letter claims to come from <b>${n}</b>, but its ring belongs to another address.`,
+    should: 'Should be', arrived: 'Arrived', noMatch: 'ring does not match', blocked: 'Payment blocked', fakeHint: 'Ask them another way. The pigeon was sent back.', goBack: 'Go back',
+    ringT: 'Get your pigeon a ring', free: 'This ring is free', taken: (a) => `Taken by ${a}`, reserved: 'Reserved', invalid: 'Letters, digits and single dashes only',
+    price: 'Engraving', forever: 'Duration', foreverV: 'Forever', how: 'How', howV: 'Note', rule: 'Rule', ruleV: 'First on chain wins',
+    ringHint: 'With a ring your friends find you by name, and your pigeon always lands at the right window.',
+    engrave: 'Engrave the ring', engraving: 'Engraving on chain…', yours: 'The ring is yours', closed: 'Ring registry opens soon', mine: 'Your rings',
+    evSent: 'Sent', evSentSub: (n) => `on its way to ${n}`, evGot: 'Received', evGotSub: (n) => `from ${n}`, evPaid: 'Paid', evPaidSub: (n) => `${n} paid your request`,
+    evSplit: (k, n) => `${k} of ${n} paid`, evSplitWait: (n) => `${n}’s stamp is waiting`, evSplitAll: 'Every stamp is in', evRingSub: (n) => `you are ${n} now`, paidWord: 'PAID',
+    rejected: 'Cancelled in the wallet', failed: 'Something went wrong', notFound: 'Not found', tooLong: 'Note too long',
+  },
+  tr: {
+    app: 'Güvercin', tagline: 'Nimiq’in yeni formu', send: 'Gönder', request: 'İste', split: 'Böl', ring: 'Halka al',
+    noRing: 'Henüz halka yok', letters: 'Sana gelen mektuplar', noLetters: 'Bu hafta mektup yok.',
+    openInPay: 'Gönderip almak için bu uygulamayı Nimiq Pay içinde aç.', retry: 'Tekrar dene', flyHome: 'Güvercin, Nimiq Pay cüzdanının içinde uçar.', scanQr: 'Telefonunla okut, Güvercin Nimiq Pay’de açılsın.', openPay: 'Nimiq Pay’de aç', noPay: 'Nimiq Pay yok mu?', connecting: 'Nimiq ağına bağlanılıyor…', walletWait: 'Nimiq Pay’e bağlanılıyor…',
+    write: 'Mektup yaz', to: 'KİME', toHint: 'isim.nim ya da NQ adresi', ringOk: 'Halkası tutuyor', plain: 'Düz adres, halkası yok', noName: 'Bu halkayı takan yok',
+    stampHint: 'Puldaki resim bu adrese özel. Arkadaşının ekranındakiyle aynı mı, bir bak.',
+    notePh: 'Bir not ekle', noteHint: 'Not zincire yazılır, herkes görebilir.', seal: 'Mühürle ve uçur', sending: 'Cüzdanın onayı bekleniyor…',
+    delivered: 'ULAŞTI · NIMIQ POSTASI · ', note: 'Not', fee: 'Ücret', tx: 'İşlem', share: 'Paylaş', done: 'Tamam',
+    tie: 'Ayağına not bağla', amount: 'TUTAR', what: 'NE İÇİN', create: 'Notu bağla',
+    reqHint: 'Linki kime yollarsan güvercin onun penceresine konar. Ödeyince sana döner.',
+    copy: 'Kopyala', copied: 'Kopyalandı', waiting: 'Bekliyor', paid: 'Ödendi', partial: 'Kısmen', atWindow: 'Güvercin pencerede', back: 'Sana döndü',
+    splitT: 'Mektubu böl', people: 'KİMLER ÖDER', addPerson: 'isim.nim ya da bir ad', add: 'Ekle', includeMe: 'Ben de pay ödüyorum', splitIt: 'Pullara ayır',
+    stampsOf: (n, s, k) => `${n} pul · kişi başı ${s} NIM · ${k}/${n} damgalandı`, nudge: 'Hatırlat', splitHint: 'Ödeyen her kişinin pulu damgalanır. Hepsi damgalanınca mektup tamamlanır.',
+    paidMark: 'ÖDENDİ · ÖDENDİ · ', sentYou: 'sana mektup yolladı', ringIs: (n) => `Halkası ${n} ile eşleşiyor`, noRingWarn: 'Halkası yok. Adresi kişiyle kontrol et.',
+    notNow: 'Şimdi değil', pay: 'öde', alreadyPaid: 'Bu mektup zaten ödendi.',
+    fakeT: (n) => `Bu güvercinin halkası ${n}.nim değil`, fakeP: (n) => `Mektup <b>${n}</b> adına geliyor ama güvercinin halkası başka bir adrese ait.`,
+    should: 'Olması gereken', arrived: 'Gelen güvercin', noMatch: 'halka tutmuyor', blocked: 'Ödeme kapatıldı', fakeHint: 'Kişiye başka bir yoldan sor. Güvercin geri gönderildi.', goBack: 'Geri dön',
+    ringT: 'Güvercinine halka taktır', free: 'Bu halka boşta', taken: (a) => `${a} takıyor`, reserved: 'Ayrılmış', invalid: 'Yalnız harf, rakam ve tek tire',
+    price: 'Kazıma ücreti', forever: 'Süre', foreverV: 'Süresiz', how: 'Nasıl', howV: 'Nota', rule: 'Kural', ruleV: 'Zincirde ilk yazan alır',
+    ringHint: 'Halka takılınca arkadaşların seni isminle bulur; güvercinin hep doğru pencereye konar.',
+    engrave: 'Halkayı taktır', engraving: 'Zincire kazınıyor…', yours: 'Halka artık senin', closed: 'Halka defteri yakında açılıyor', mine: 'Halkaların',
+    evSent: 'Uçtu', evSentSub: (n) => `${n} yolda`, evGot: 'Geldi', evGotSub: (n) => `Gönderen: ${n}`, evPaid: 'Ödendi', evPaidSub: (n) => `${n} isteğini ödedi`,
+    evSplit: (k, n) => `${k}/${n} ödedi`, evSplitWait: (n) => `Bekleyen pul: ${n}`, evSplitAll: 'Bütün pullar damgalandı', evRingSub: (n) => `Yeni adın: ${n}`, paidWord: 'ÖDENDİ',
+    rejected: 'Cüzdanda vazgeçildi', failed: 'Bir şey ters gitti', notFound: 'Bulunamadı', tooLong: 'Not çok uzun',
+  },
+}[lang];
+
+const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+const API = LOCAL ? '' : 'https://signal.heylogram.tv/pigeonapi';
+const SITE = LOCAL ? location.origin : 'https://pigeon.heylogram.com';
+const IN_FRAME = (() => { try { return window.parent !== window; } catch { return true; } })();
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const compact = (a) => String(a || '').replace(/\s/g, '').toUpperCase();
+const pretty = (a) => compact(a).replace(/(.{4})/g, '$1 ').trim();
+const short = (a) => { const c = pretty(a); return c ? c.slice(0, 9) + ' … ' + c.slice(-4) : ''; };
+const isAddr = (a) => /^NQ[0-9]{2}[0-9A-Z]{32}$/.test(compact(a));
+const nim = (luna, digits = 5) => (Number(luna || 0) / 1e5).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: digits });
+const toLuna = (v) => { const n = Number(String(v || '').replace(/\s/g, '').replace(',', '.')); return Number.isFinite(n) && n > 0 ? Math.round(n * 1e5) : 0; };
+const bytes = (s) => new TextEncoder().encode(s).length;
+const clip = (s, max = 64) => { let out = ''; for (const ch of s) { if (bytes(out + ch) > max) break; out += ch; } return out; };
+const ICON = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const CHECK = ICON('<path d="M5 12.5l4.5 4.5L19 7.5"/>');
+const dateParts = (t = Date.now()) => { const d = new Date(t); return [d.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' }).toLocaleUpperCase(lang === 'tr' ? 'tr-TR' : 'en-US'), d.toLocaleTimeString(lang === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })]; };
+const green = () => getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#14907E';
+
+let toastTimer;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 2200); }
+
+async function api(path, body) {
+  for (let i = 0; i < 20; i++) {
+    const r = await fetch(API + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {});
+    if (r.status === 503) { if (i === 1) toast(T.connecting); await new Promise((ok) => setTimeout(ok, 2000)); continue; }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.error || 'http'), { status: r.status });
+    return j;
+  }
+  throw new Error('syncing');
+}
+
+let identicons;
+let idSeq = 0;
+const idCache = new Map();
+async function identicon(addr) {
+  const key = compact(addr);
+  if (!idCache.has(key)) {
+    identicons ||= globalThis.__identicons ? Promise.resolve(globalThis.__identicons) : import(new URL('identicons.js', document.baseURI).href).then((m) => m.default);
+    idCache.set(key, identicons.then((I) => I.svg(pretty(key))));
+  }
+  return (await idCache.get(key)).replace(/hexagon-clip-\d+/g, () => 'hc' + idSeq++);
+}
+const idn = (addr, size) => `<i class="idn" data-a="${esc(compact(addr))}" style="width:${size}px;height:${size}px"></i>`;
+function paintIdenticons(root = document) {
+  for (const el of root.querySelectorAll('.idn[data-a]')) {
+    const a = el.dataset.a; el.removeAttribute('data-a');
+    if (isAddr(a)) identicon(a).then((svg) => { el.innerHTML = svg; }).catch(() => {});
+  }
+}
+
+const bridge = (() => {
+  let seq = 0, found = null;
+  const waiting = new Map();
+  addEventListener('message', (e) => {
+    const v = e.data;
+    if (e.source !== window.parent || !v || v.tur !== 'hl-nimiq' || v.islem !== 'sonuc') return;
+    const w = waiting.get(v.id); if (!w) return; waiting.delete(v.id);
+    v.ok ? w.ok(v.sonuc) : w.no(Object.assign(new Error(v.hata?.mesaj || 'wallet'), { code: v.hata?.kod }));
+  });
+  const call = (method, args) => new Promise((ok, no) => {
+    const id = ++seq; waiting.set(id, { ok, no });
+    setTimeout(() => { if (waiting.delete(id)) no(Object.assign(new Error('timeout'), { code: 'timeout' })); }, 180000);
+    window.parent.postMessage({ tur: 'hl-nimiq', islem: 'cagir', id, yontem: method, args }, '*');
+  });
+  const provider = { listAccounts: () => call('listAccounts', []), sendBasicTransaction: (tx) => call('sendBasicTransaction', [tx]), sendBasicTransactionWithData: (tx) => call('sendBasicTransactionWithData', [tx]) };
+  return (wait) => (found ||= new Promise((resolve) => {
+    const ask = () => window.parent.postMessage({ tur: 'hl-nimiq', islem: 'sor' }, '*');
+    const on = (e) => {
+      const v = e.data;
+      if (e.source !== window.parent || v?.tur !== 'hl-nimiq' || v.islem !== 'durum') return;
+      removeEventListener('message', on); clearInterval(again); clearTimeout(stop);
+      resolve(v.var ? provider : null);
+    };
+    addEventListener('message', on);
+    const again = setInterval(ask, 500);
+    const stop = setTimeout(() => { removeEventListener('message', on); clearInterval(again); found = null; resolve(null); }, wait);
+    ask();
+  }));
+})();
+
+const wallet = {
+  async provider(wait = 2500) {
+    if (IN_FRAME) return bridge(Math.max(wait, 12000));
+    if (window.nimiq) return window.nimiq;
+    const until = Date.now() + wait;
+    while (Date.now() < until) { await new Promise((ok) => setTimeout(ok, 50)); if (window.nimiq) return window.nimiq; }
+    return null;
+  },
+  async address() {
+    const p = await this.provider(); if (!p) return null;
+    const list = await p.listAccounts();
+    const a = Array.isArray(list) ? (typeof list[0] === 'string' ? list[0] : list[0]?.address) : null;
+    return a ? compact(a) : null;
+  },
+  async send(to, value, data) {
+    const p = await this.provider(500);
+    if (!p) throw Object.assign(new Error('no_wallet'), { code: 'no_wallet' });
+    const tx = { recipient: pretty(to), value, fee: 0 };
+    return data ? p.sendBasicTransactionWithData({ ...tx, data: clip(data) }) : p.sendBasicTransaction(tx);
+  },
+};
+const walletError = (e) => toast(/reject|denied|cancel|closed/i.test(String(e?.message || e?.code || e)) ? T.rejected : e?.code === 'no_wallet' ? T.openInPay : T.failed);
+
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem('pg_' + k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('pg_' + k, JSON.stringify(v)); } catch {} },
+};
+function remember(address, name) {
+  if (!isAddr(address) || compact(address) === me.address) return;
+  const list = store.get('contacts', []).filter((c) => c.address !== compact(address));
+  list.unshift({ address: compact(address), name: name || null });
+  store.set('contacts', list.slice(0, 12));
+}
+
+const me = { address: null, name: null, balance: null };
+const label = (address, name) => (name ? name + '.nim' : short(address));
+const sentEvent = (to, name, value, note) => playEvent('sent', { amount: nim(value), note, title: T.evSent, sub: T.evSentSub(label(to, name)) });
+let seenIncoming = null;
+async function loadMe() {
+  me.address = await wallet.address().catch(() => null);
+  if (!me.address) return;
+  const [n, b] = await Promise.all([api('/api/address/' + me.address).catch(() => ({})), api('/api/balance/' + me.address).catch(() => ({}))]);
+  me.name = n.name || null; me.balance = b.value ?? null;
+}
+
+let timer = null;
+function every(ms, fn) { clearInterval(timer); timer = setInterval(fn, ms); }
+const app = () => $('#app');
+const bar = (html) => { $('#bar').innerHTML = html || ''; };
+function screen(html, barHtml) { clearInterval(timer); app().innerHTML = html; bar(barHtml); paintIdenticons(app()); paintIdenticons($('#bar')); window.scrollTo(0, 0); }
+const backBtn = (title) => `<button class="back" data-back><b>‹</b>${esc(title)}</button>`;
+
+const ROUTES = {};
+function go(view, data = {}) { try { history.pushState({ view, data }, ''); } catch {} render(view, data); }
+function render(view, data) { (ROUTES[view] || ROUTES.home)(data || {}); }
+addEventListener('popstate', (e) => render(e.state?.view || 'home', e.state?.data));
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-back]')) { if (history.state && history.length > 1) history.back(); else go('home'); }
+});
+
+async function share(text, url) {
+  try { if (navigator.share) { await navigator.share({ text, url }); return; } } catch { return; }
+  copy(url || text);
+}
+async function copy(s) {
+  try { await navigator.clipboard.writeText(s); } catch { const t = document.createElement('textarea'); t.value = s; document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
+  toast(T.copied);
+}
+
+const OPEN_URL = 'https://nimpay.app/miniapps/open/pigeon.heylogram.com';
+const STORES = [['Google Play', 'https://play.google.com/store/apps/details?id=com.nimiq.pay'], ['App Store', 'https://apps.apple.com/app/nimiq-pay/id6471844738']];
+function connectCard() {
+  const desk = matchMedia('(pointer: fine)').matches;
+  let qr = '';
+  if (desk) { const q = qrcode(0, 'M'); q.addData(OPEN_URL); q.make(); qr = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); }
+  return `<div class="coop connect"><div class="hand" style="font-size:21px">${esc(T.flyHome)}</div>
+${desk ? `<div class="qrbox"><div class="qr">${qr}</div><p class="hint">${esc(T.scanQr)}</p></div>` : `<a class="btn main" href="${OPEN_URL}" target="_blank" rel="noopener">${esc(T.openPay)}</a>`}
+<div class="stores"><span class="hint">${esc(T.noPay)}</span>${STORES.map(([n, u]) => `<a href="${u}" target="_blank" rel="noopener">${n}</a>`).join('')}</div>
+<button class="link" id="retry">${esc(T.retry)}</button></div>`;
+}
+
+ROUTES.home = async () => {
+  const contacts = store.get('contacts', []).slice(0, 3);
+  const spots = [[6, 66], [36, 80], [66, 70]];
+  const perches = contacts.map((c, i) => `<button class="perch" data-c="${i}" style="left:calc(${spots[i][0]}% - 10px);top:${spots[i][1] - 40}px"><div class="g">${perched()}</div><span class="ring">${idn(c.address, 16)}${esc(c.name || short(c.address).slice(0, 9))}</span></button>`).join('');
+  const nameHtml = me.name ? `${esc(me.name)}<em>.nim</em>` : esc(T.noRing);
+  const body = me.address ? `<div class="coop"><div class="me">${idn(me.address, 46)}<div style="min-width:0"><b class="name">${nameHtml}</b><small>${esc(short(me.address))}</small></div></div>
+<div class="balance"><b>${me.balance == null ? '…' : nim(me.balance, 2)}</b><span>NIM</span></div>
+<div class="stamps"><button class="stamp hot" data-go="send">${ICON('<path d="M5 12h12M12 6l6 6-6 6"/>')}${esc(T.send)}</button><button class="stamp" data-go="request">${ICON('<path d="M19 12H7M12 6l-6 6 6 6"/>')}${esc(T.request)}</button><button class="stamp" data-go="split">${ICON('<circle cx="12" cy="12" r="8"/><path d="M12 4v16M12 12l6 5"/>')}${esc(T.split)}</button><button class="stamp" data-go="name">${ICON('<ellipse cx="12" cy="12" rx="8" ry="4.5"/><ellipse cx="12" cy="12" rx="4" ry="2"/>')}${esc(T.ring)}</button></div>
+<div class="letters" id="letters"><p class="hint">${esc(T.letters)}…</p></div></div>`
+    : connectCard();
+  screen(`<div class="brand">${logo()}${esc(T.app)}</div><div class="wire"><svg class="w" viewBox="0 0 410 60" preserveAspectRatio="none"><path d="M0 18 Q205 52 410 18" fill="none" stroke="var(--wire)" stroke-width="2"/></svg>${perches}</div>${body}`);
+  app().querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dataset.go));
+  app().querySelectorAll('[data-c]').forEach((b) => b.onclick = () => { const c = contacts[b.dataset.c]; go('send', { to: c.name ? c.name + '.nim' : pretty(c.address) }); });
+  const retry = $('#retry'); if (retry) retry.onclick = async () => { retry.disabled = true; await loadMe(); render('home'); };
+  if (!me.address) return;
+  const refresh = async () => {
+    const [b, inc] = await Promise.all([api('/api/balance/' + me.address).catch(() => null), api('/api/incoming/' + me.address).catch(() => null)]);
+    if (b) { me.balance = b.value; const el = $('.balance b'); if (el) el.textContent = nim(b.value, 2); }
+    const box = $('#letters'); if (!box || !inc) return;
+    const list = inc.slice(-6).reverse();
+    const fresh = seenIncoming ? inc.filter((t) => !seenIncoming.has(t.hash)) : [];
+    seenIncoming = new Set(inc.map((t) => t.hash));
+    const last = fresh.at(-1);
+    if (last) playEvent('received', { value: last.value, format: (v) => nim(Math.round(v), 2), note: last.note.replace(/^ode:[0-9a-f]{8}\s*/, ''), title: T.evGot, sub: T.evGotSub(label(last.from, last.fromName)) });
+    box.innerHTML = list.length ? list.map((t) => `<div class="lt">${idn(t.from, 28)}<span><b>${esc(t.fromName ? t.fromName + '.nim' : short(t.from))}</b>${t.note ? ' · ' + esc(t.note.replace(/^ode:[0-9a-f]{8}\s*/, '')) : ''}</span><b class="in">+${nim(t.value)}</b></div>`).join('') : `<p class="hint">${esc(T.noLetters)}</p>`;
+    paintIdenticons(box);
+  };
+  refresh(); every(15000, refresh);
+};
+
+async function resolveWho(raw) {
+  const v = raw.trim();
+  if (!v) return null;
+  if (isAddr(v)) { const r = await api('/api/address/' + compact(v)).catch(() => ({})); return { address: compact(v), name: r.name || null, plain: !r.name }; }
+  const name = v.toLowerCase().replace(/\.nim$/, '');
+  const r = await api('/api/name/' + encodeURIComponent(name)).catch(() => ({}));
+  return r.address ? { address: compact(r.address), name } : { missing: true, name };
+}
+
+ROUTES.send = (d) => {
+  let who = null, amount = toLuna(d.amount) || 0;
+  screen(`${backBtn(T.write)}
+<div class="envelope"><div class="pst" id="pst"></div><div class="to">${esc(T.to)}</div><input class="who" id="who" placeholder="${esc(T.toHint)}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(d.to || '')}"><div class="addr" id="addr"></div><span id="check"></span></div>
+<p class="hint">${esc(T.stampHint)}</p>
+<div class="sheet"><div class="amount"><input id="amt" inputmode="decimal" placeholder="0" value="${amount ? esc(nim(amount)) : ''}"><span>NIM</span></div>
+<div class="quick">${[5, 10, 25, 50].map((v) => `<button data-q="${v}">${v}</button>`).join('')}</div>
+<input class="note" id="note" maxlength="64" placeholder="${esc(T.notePh)}" value="${esc(d.note || '')}"><small>${esc(T.noteHint)}</small></div>`,
+  `<button class="btn main" id="go" disabled>${esc(T.seal)}</button>`);
+  const upd = () => {
+    amount = toLuna($('#amt').value);
+    app().querySelectorAll('[data-q]').forEach((b) => b.classList.toggle('on', toLuna(b.dataset.q) === amount));
+    const b = $('#go'); b.disabled = !(who?.address && amount);
+    b.textContent = amount ? `${T.seal} · ${nim(amount)} NIM` : T.seal;
+  };
+  let seq = 0, deb;
+  const look = () => {
+    clearTimeout(deb);
+    deb = setTimeout(async () => {
+      const my = ++seq; const v = $('#who').value;
+      $('#who').classList.toggle('long', /^NQ/i.test(v.trim()));
+      who = null; upd();
+      const r = await resolveWho(v);
+      if (my !== seq) return;
+      who = r;
+      $('#pst').innerHTML = r?.address ? idn(r.address, 52) : '';
+      $('#addr').textContent = r?.address ? short(r.address) : '';
+      $('#check').innerHTML = !r ? '' : r.missing ? `<span class="ok warn">${esc(T.noName)}</span>` : r.plain ? `<span class="ok warn">${esc(T.plain)}</span>` : `<span class="ok">${CHECK}${esc(T.ringOk)}</span>`;
+      paintIdenticons(app()); upd();
+    }, 300);
+  };
+  $('#who').oninput = look; $('#amt').oninput = upd;
+  app().querySelectorAll('[data-q]').forEach((b) => b.onclick = () => { $('#amt').value = b.dataset.q; upd(); });
+  $('#note').oninput = (e) => { if (bytes(e.target.value) > 64) { e.target.value = clip(e.target.value); toast(T.tooLong); } };
+  if (d.to) look();
+  upd();
+  $('#go').onclick = async () => {
+    const b = $('#go'); b.disabled = true; b.textContent = T.sending;
+    const note = $('#note').value.trim();
+    try {
+      const hash = await wallet.send(who.address, amount, note);
+      remember(who.address, who.name);
+      await sentEvent(who.address, who.name, amount, note);
+      go('receipt', { to: who.address, name: who.name, value: amount, note, hash: String(hash || ''), t: Date.now() });
+    } catch (e) { walletError(e); upd(); }
+  };
+};
+
+ROUTES.receipt = (d) => {
+  screen(`<div class="flight"><svg class="trail" viewBox="0 0 354 300" preserveAspectRatio="none"><path d="M40 270 C 120 230, 110 120, 260 70" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round"/></svg>
+${me.address ? `<div class="me">${idn(me.address, 50)}</div>` : ''}<div class="bird">${flying()}</div><div class="pm">${postmark(T.delivered, dateParts(d.t), green())}</div></div>
+<div class="slip"><div class="top">${idn(d.to, 34)}<b>${esc(d.name ? d.name + '.nim' : short(d.to))}</b><strong>${nim(d.value)} NIM</strong></div>
+<dl>${d.note ? `<dt>${esc(T.note)}</dt><dd class="hand">${esc(d.note.replace(/^ode:[0-9a-f]{8}\s*/, ''))}</dd>` : ''}<dt>${esc(T.fee)}</dt><dd>0 NIM</dd>${d.hash ? `<dt>${esc(T.tx)}</dt><dd class="mono" style="font-size:12px">${esc(d.hash.slice(0, 4) + ' ' + d.hash.slice(4, 8) + ' … ' + d.hash.slice(-4))}</dd>` : ''}</dl></div>`,
+  `<button class="btn" id="sh">${esc(T.share)}</button><button class="btn main" id="ok">${esc(T.done)}</button>`);
+  $('#sh').onclick = () => share(`${nim(d.value)} NIM → ${d.name ? d.name + '.nim' : pretty(d.to)}${d.hash ? '\n' + d.hash : ''}`);
+  $('#ok').onclick = () => { loadMe(); go('home'); };
+};
+
+ROUTES.request = () => {
+  if (!me.address) return go('home');
+  screen(`${backBtn(T.tie)}<div class="tied"><div class="g">${perched()}</div><div class="tag"><b id="tb">0 <span>NIM</span></b><div class="hand" id="tn">&nbsp;</div></div></div>
+<div class="form"><label>${esc(T.amount)}</label><input class="big" id="amt" inputmode="decimal" placeholder="0"><label>${esc(T.what)}</label><input id="note" maxlength="50" placeholder="${esc(T.notePh)}"></div>
+<p class="hint">${esc(T.reqHint)}</p>`, `<button class="btn main" id="go" disabled>${esc(T.create)}</button>`);
+  const upd = () => { const v = toLuna($('#amt').value); $('#tb').innerHTML = `${nim(v)} <span>NIM</span>`; $('#tn').textContent = $('#note').value || ' '; $('#go').disabled = !v; };
+  $('#amt').oninput = upd; $('#note').oninput = upd;
+  $('#go').onclick = async () => {
+    $('#go').disabled = true;
+    try { const r = await api('/api/request', { to: me.address, value: toLuna($('#amt').value), note: $('#note').value.trim(), as: me.name }); go('req', { id: r.id }); }
+    catch { toast(T.failed); upd(); }
+  };
+};
+
+const reqLink = (id) => `${SITE}/#r=${id}`;
+const statusPill = (s) => `<span class="pill ${s === 'paid' ? 'done' : ''}">${esc(s === 'paid' ? T.paid : s === 'partial' ? T.partial : T.waiting)}</span>`;
+
+ROUTES.req = async (d) => {
+  let r;
+  try { r = await api('/api/request/' + d.id); } catch { return screen(`${backBtn(T.notFound)}`); }
+  if (r.as && compact(r.asAddress) !== compact(r.to)) return ROUTES.fake(r);
+  if (me.address && compact(r.to) === me.address) return ownRequest(r);
+  return incoming(r);
+};
+
+function ownRequest(r) {
+  const link = reqLink(r.id);
+  const lastPayer = r.payments.at(-1);
+  screen(`${backBtn(T.tie)}<div class="tied"><div class="g">${r.status === 'paid' ? '' : perched()}</div><div class="tag"><b>${nim(r.value)} <span>NIM</span></b><div class="hand">${esc(r.note || ' ')}</div><code>${esc(link.replace(/^https?:\/\//, ''))}</code></div></div>
+<p class="hint">${esc(T.reqHint)}</p>
+<div class="window" id="win"><div class="frame"><div class="g">${r.status === 'paid' ? flying() : perched()}</div></div><div style="min-width:0"><b>${lastPayer ? esc(lastPayer.fromName ? lastPayer.fromName + '.nim' : short(lastPayer.from)) : ' '}</b><small>${esc(r.status === 'paid' ? T.back : T.atWindow)} · ${nim(r.paid)}/${nim(r.value)} NIM</small></div>${statusPill(r.status)}</div>`,
+  `<button class="btn" id="cp">${esc(T.copy)}</button><button class="btn main" id="sh">${esc(T.share)}</button>`);
+  $('#cp').onclick = () => copy(link);
+  $('#sh').onclick = () => share(`${r.note ? r.note + ' · ' : ''}${nim(r.value)} NIM`, link);
+  if (r.status !== 'paid') every(5000, async () => { const n = await api('/api/request/' + r.id).catch(() => null); if (n && n.paid !== r.paid) { clearInterval(timer); const p = n.payments.at(-1); await playEvent('paid', { amount: nim(n.value), note: n.note, word: T.paidWord, title: T.evPaid, sub: T.evPaidSub(label(p.from, p.fromName)) }); ownRequest(n); } });
+}
+
+function incoming(r) {
+  const from = r.toName ? r.toName + '.nim' : short(r.to);
+  const left = Math.max(0, r.value - r.paid);
+  const ring = r.toName ? `<span class="ok">${CHECK}${esc(T.ringIs(r.toName + '.nim'))}</span>` : `<span class="ok warn">${esc(T.noRingWarn)}</span>`;
+  screen(`<div class="sill"><div class="frame"></div><div class="board"></div><div class="g">${flying()}</div></div>
+<div class="open"><div class="from">${idn(r.to, 26)}<b>${esc(from)}</b> ${esc(T.sentYou)}</div>${r.note ? `<div class="hand">${esc(r.note)}</div>` : ''}<b class="t">${nim(left || r.value)} NIM</b>${ring}
+${r.status === 'paid' ? `<span class="ok">${CHECK}${esc(T.alreadyPaid)}</span>` : ''}<small class="hint mono">${esc(short(r.to))}</small></div>`,
+  r.status === 'paid' ? `<button class="btn main" id="no">${esc(T.done)}</button>` : `<button class="btn" id="no">${esc(T.notNow)}</button><button class="btn main" id="pay">${nim(left)} NIM ${esc(T.pay)}</button>`);
+  $('#no').onclick = () => go('home');
+  const pay = $('#pay');
+  if (pay) pay.onclick = async () => {
+    pay.disabled = true; pay.textContent = T.sending;
+    try {
+      const hash = await wallet.send(r.to, left, r.memo);
+      remember(r.to, r.toName);
+      await sentEvent(r.to, r.toName, left, r.note);
+      go('receipt', { to: r.to, name: r.toName, value: left, note: r.note, hash: String(hash || ''), t: Date.now() });
+    } catch (e) { walletError(e); pay.disabled = false; pay.textContent = `${nim(left)} NIM ${T.pay}`; }
+  };
+}
+
+ROUTES.fake = (r) => {
+  const claimed = r.as + '.nim';
+  screen(`<div class="fake"><h2>${esc(T.fakeT(r.as))}</h2><p>${T.fakeP(esc(claimed))}</p>
+<div class="two"><div><div class="g">${perched()}</div><small>${esc(T.should)}</small><b>${esc(claimed)}</b><br>${r.asAddress ? `<span class="ring">${idn(r.asAddress, 16)}${esc(short(r.asAddress))}</span>` : ''}</div>
+<div><div class="g">${perched()}</div><small>${esc(T.arrived)}</small><b>${esc(T.noMatch)}</b><br><span class="ring bad">${idn(r.to, 16)}${esc(short(r.to))}</span></div></div>
+<span class="cross">${esc(T.blocked)}</span></div><p class="hint" style="text-align:center">${esc(T.fakeHint)}</p>`,
+  `<button class="btn" id="bk">${esc(T.goBack)}</button>`);
+  $('#bk').onclick = () => go('home');
+};
+
+ROUTES.split = () => {
+  if (!me.address) return go('home');
+  const people = [];
+  screen(`${backBtn(T.splitT)}<div class="form"><label>${esc(T.amount)}</label><input class="big" id="amt" inputmode="decimal" placeholder="0"><label>${esc(T.what)}</label><input id="note" maxlength="40" placeholder="${esc(T.notePh)}">
+<label>${esc(T.people)}</label><div class="people" id="pp"></div><div style="display:flex;gap:8px"><input id="who" placeholder="${esc(T.addPerson)}" autocapitalize="off" spellcheck="false"><button class="btn" style="flex:none;min-height:40px" id="add">${esc(T.add)}</button></div>
+<label class="chk"><input type="checkbox" id="mein" checked style="width:auto">${esc(T.includeMe)}</label></div>
+<p class="hint" id="calc">&nbsp;</p>`, `<button class="btn main" id="go" disabled>${esc(T.splitIt)}</button>`);
+  const upd = () => {
+    $('#pp').innerHTML = people.map((p, i) => `<span>${esc(p)}<button data-x="${i}">×</button></span>`).join('');
+    $('#pp').querySelectorAll('[data-x]').forEach((b) => b.onclick = () => { people.splice(b.dataset.x, 1); upd(); });
+    const v = toLuna($('#amt').value), n = people.length + ($('#mein').checked ? 1 : 0);
+    const each = n ? Math.floor(v / n) : 0;
+    $('#calc').textContent = people.length && v ? T.stampsOf(people.length, nim(each), 0) : ' ';
+    $('#go').disabled = !(v && people.length && each);
+  };
+  const add = () => { const v = $('#who').value.trim().slice(0, 40); if (v && people.length < 20) { people.push(v); $('#who').value = ''; upd(); } };
+  $('#add').onclick = add; $('#who').onkeydown = (e) => { if (e.key === 'Enter') add(); };
+  $('#amt').oninput = upd; $('#mein').onchange = upd;
+  $('#go').onclick = async () => {
+    $('#go').disabled = true;
+    try { const s = await api('/api/split', { to: me.address, value: toLuna($('#amt').value), people, includeMe: $('#mein').checked, note: $('#note').value.trim() }); go('splitv', { id: s.id }); }
+    catch { toast(T.failed); upd(); }
+  };
+};
+
+const personAddr = new Map();
+async function personAddress(p) {
+  const name = p.toLowerCase().replace(/\.nim$/, '');
+  if (!/^[a-z0-9-]{1,32}$/.test(name)) return null;
+  if (!personAddr.has(name)) personAddr.set(name, api('/api/name/' + name).then((r) => r.address || null).catch(() => null));
+  return personAddr.get(name);
+}
+
+ROUTES.splitv = async (d) => {
+  let s;
+  try { s = await api('/api/split/' + d.id); } catch { return screen(`${backBtn(T.notFound)}`); }
+  const mine = me.address && compact(s.to) === me.address;
+  const draw = async (s) => {
+    const stamped = s.parts.filter((p) => p.status === 'paid').length;
+    const addrs = await Promise.all(s.parts.map((p) => personAddress(p.person)));
+    screen(`${backBtn(T.splitT)}<div class="splitL"><div class="hand">${esc(s.note || ' ')}</div><div class="total"><b>${nim(s.total)}</b><span>NIM</span></div><p class="hint">${esc(T.stampsOf(s.parts.length, nim(s.share), stamped))}</p><div class="torn"></div></div>
+<div class="parts">${s.parts.map((p, i) => `<button class="part" data-i="${i}">${addrs[i] ? idn(addrs[i], 48) : `<span class="blank">${esc(p.person.slice(0, 1).toUpperCase())}</span>`}<b>${esc(p.person)}</b><small>${nim(p.value)} NIM</small>${p.status === 'paid' ? `<div class="pmk">${postmark(T.paidMark, [T.paid.toUpperCase()], green())}</div>` : mine ? `<span class="nudge">${esc(T.nudge)}</span>` : ''}</button>`).join('')}</div>
+<p class="hint">${esc(T.splitHint)}</p>`, mine ? `<button class="btn main" id="sh">${esc(T.share)}</button>` : '');
+    app().querySelectorAll('[data-i]').forEach((b) => b.onclick = () => {
+      const p = s.parts[b.dataset.i];
+      if (mine) share(`${s.note ? s.note + ' · ' : ''}${nim(p.value)} NIM`, reqLink(p.id));
+      else if (p.status !== 'paid') go('req', { id: p.id });
+    });
+    const sh = $('#sh'); if (sh) sh.onclick = () => share(s.note || T.splitT, `${SITE}/#s=${s.id}`);
+    if (stamped < s.parts.length) every(6000, async () => { const n = await api('/api/split/' + s.id).catch(() => null); const k = n ? n.parts.filter((p) => p.status === 'paid').length : stamped;
+      if (k === stamped) return;
+      clearInterval(timer);
+      const ad = await Promise.all(n.parts.map((p) => personAddress(p.person)));
+      const waiting = n.parts.find((p) => p.status !== 'paid');
+      await playEvent('split', { amount: nim(n.total), note: n.note, word: T.paidWord, paint: paintIdenticons, title: T.evSplit(k, n.parts.length), sub: waiting ? T.evSplitWait(waiting.person) : T.evSplitAll,
+        parts: n.parts.map((p, i) => ({ label: p.person, amount: nim(p.value), paid: p.status === 'paid', icon: ad[i] ? idn(ad[i], 50) : '' })) });
+      draw(n); });
+  };
+  draw(s);
+};
+
+ROUTES.name = async () => {
+  if (!me.address) return go('home');
+  const reg = await api('/api/registry').catch(() => ({ open: false }));
+  let state = null;
+  screen(`${backBtn(T.ringT)}<div class="bigring" id="br"><div class="outer"></div><div class="inner"></div><div class="text" id="rt">${esc(me.name ? me.name + '.nim' : '')}</div></div>
+<div class="namebox"><input id="nm" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="32" placeholder="${esc(lang === 'tr' ? 'isim' : 'name')}"><em>.nim</em></div><span id="st"></span>
+<div class="recipe" id="rc"></div><p class="hint">${esc(reg.open ? T.ringHint : T.closed)}</p>`,
+  `<button class="btn main" id="go" disabled>${esc(reg.open ? T.engrave : T.closed)}</button>`);
+  const recipe = (name, price) => { $('#rc').innerHTML = `<div><span>${esc(T.price)}</span><b>${price ? nim(price) + ' NIM' : '—'}</b></div><div><span>${esc(T.forever)}</span><b>${esc(T.foreverV)}</b></div><div><span>${esc(T.how)}</span><b>${esc(T.howV)} <code>nim:${esc(name || '…')}</code></b></div><div><span>${esc(T.rule)}</span><b>${esc(T.ruleV)}</b></div>`; };
+  recipe('', 0);
+  let seq = 0, deb;
+  $('#nm').oninput = () => {
+    const v = $('#nm').value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (v !== $('#nm').value) $('#nm').value = v;
+    $('#rt').textContent = v ? v + '.nim' : (me.name ? me.name + '.nim' : '');
+    state = null; $('#go').disabled = true; recipe(v, 0); $('#st').innerHTML = '';
+    clearTimeout(deb);
+    if (!v) return;
+    deb = setTimeout(async () => {
+      const my = ++seq;
+      const r = await api('/api/name/' + v).catch(() => null);
+      if (my !== seq || !r) return;
+      state = r;
+      $('#st').innerHTML = r.invalid ? `<span class="ok warn">${esc(T.invalid)}</span>` : r.reserved ? `<span class="ok warn">${esc(T.reserved)}</span>` : r.address ? `<span class="ok warn">${esc(T.taken(compact(r.address) === me.address ? T.mine : short(r.address)))}</span>` : `<span class="ok">${CHECK}${esc(T.free)}</span>`;
+      recipe(v, r.price || 0);
+      $('#go').disabled = !(reg.open && r.free);
+      if (r.free) $('#go').textContent = `${T.engrave} · ${nim(r.price)} NIM`;
+    }, 300);
+  };
+  $('#go').onclick = async () => {
+    const name = state?.name; if (!name || !state.free) return;
+    const b = $('#go'); b.disabled = true; b.textContent = T.sending;
+    try { await wallet.send(reg.registry, state.price, 'nim:' + name); }
+    catch (e) { walletError(e); b.disabled = false; b.textContent = `${T.engrave} · ${nim(state.price)} NIM`; return; }
+    b.textContent = T.engraving;
+    const until = Date.now() + 120000;
+    every(3000, async () => {
+      const r = await api('/api/name/' + name).catch(() => null);
+      if (r?.address && compact(r.address) === me.address) {
+        clearInterval(timer);
+        $('#br').classList.add('engrave'); $('#rt').textContent = name + '.nim';
+        $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>`;
+        if (!me.name) me.name = name;
+        playEvent('ring', { name, lang, title: T.yours, sub: T.evRingSub(name + '.nim') });
+        b.textContent = T.done; b.disabled = false; b.onclick = () => go('home');
+      } else if (r?.address || Date.now() > until) { clearInterval(timer); toast(r?.address ? T.taken(short(r.address)) : T.failed); b.textContent = T.done; b.disabled = false; b.onclick = () => go('home'); }
+    });
+  };
+};
+
+async function start() {
+  const sky = document.createElement('div'); sky.className = 'sky';
+  sky.innerHTML = `<i class="cloud" style="left:-20px;top:70px"></i><i class="cloud" style="right:-10px;top:120px;transform:scale(.7)"></i><i class="moon"></i>` + [[10, 70], [30, 40], [80, 170], [55, 90], [88, 60], [24, 150]].map(([x, y]) => `<i class="star" style="left:${x}%;top:${y}px"></i>`).join('');
+  document.body.prepend(sky);
+  app().innerHTML = `<div class="brand">${logo()}${esc(T.app)}</div>`;
+  const loading = loadMe();
+  let seen = false;
+  try { seen = sessionStorage.getItem('pg_splash') === '1'; sessionStorage.setItem('pg_splash', '1'); } catch {}
+  if (!seen) await playSplash({ title: T.app, tagline: T.tagline, ready: Promise.race([loading, new Promise((ok) => setTimeout(ok, 600))]) });
+  let loaded = false; loading.then(() => { loaded = true; });
+  await new Promise((ok) => setTimeout(ok, 0));
+  if (!loaded) app().innerHTML = `<div class="brand">${logo()}${esc(T.app)}</div><div class="wire"><div class="perch" style="left:calc(50% - 46px);top:40px"><div class="g">${perched()}</div></div></div><p class="hint" style="text-align:center">${esc(T.walletWait)}</p>`;
+  await loading;
+  const m = (location.hash.match(/^#(r|s|n)=([0-9a-z-]{1,40})$/) || location.pathname.match(/^\/(r|s|n)\/([0-9a-z-]{1,40})$/));
+  const first = !m ? ['home', {}] : m[1] === 'r' ? ['req', { id: m[2] }] : m[1] === 's' ? ['splitv', { id: m[2] }] : ['send', { to: m[2] + '.nim' }];
+  try { history.replaceState({ view: 'home', data: {} }, '', LOCAL ? '/' : undefined); } catch {}
+  if (first[0] !== 'home') try { history.pushState({ view: first[0], data: first[1] }, ''); } catch {}
+  render(first[0], first[1]);
+}
+start();
