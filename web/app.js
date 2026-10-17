@@ -150,11 +150,10 @@ const wallet = {
     while (Date.now() < until) { await new Promise((ok) => setTimeout(ok, 50)); if (window.nimiq) return window.nimiq; }
     return null;
   },
-  async address() {
-    const p = await this.provider(); if (!p) return null;
+  async addresses() {
+    const p = await this.provider(); if (!p) return [];
     const list = await p.listAccounts();
-    const a = Array.isArray(list) ? (typeof list[0] === 'string' ? list[0] : list[0]?.address) : null;
-    return a ? compact(a) : null;
+    return (Array.isArray(list) ? list : []).map((a) => compact(typeof a === 'string' ? a : a?.address)).filter(isAddr);
   },
   async send(to, value, data) {
     const p = await this.provider(500);
@@ -170,21 +169,33 @@ const store = {
   set(k, v) { try { localStorage.setItem('pg_' + k, JSON.stringify(v)); } catch {} },
 };
 function remember(address, name) {
-  if (!isAddr(address) || compact(address) === me.address) return;
+  if (!isAddr(address) || isMine(address)) return;
   const list = store.get('contacts', []).filter((c) => c.address !== compact(address));
   list.unshift({ address: compact(address), name: name || null });
   store.set('contacts', list.slice(0, 12));
 }
 
-const me = { address: null, name: null, balance: null };
+const me = { address: null, all: [], name: null, balance: null };
+const isMine = (a) => me.all.includes(compact(a));
+async function myBalance() {
+  const vals = await Promise.all(me.all.map((a) => api('/api/balance/' + a).then((b) => b.value ?? 0).catch(() => null)));
+  return vals.some((v) => v != null) ? vals.reduce((x, v) => x + (v || 0), 0) : null;
+}
+async function myIncoming() {
+  const lists = await Promise.all(me.all.map((a) => api('/api/incoming/' + a).catch(() => null)));
+  if (lists.every((l) => !l)) return null;
+  const seen = new Set();
+  return lists.flat().filter((t) => t && !isMine(t.from) && !seen.has(t.hash) && seen.add(t.hash)).sort((a, b) => (a.time || 0) - (b.time || 0));
+}
 const label = (address, name) => (name ? name + '.nim' : short(address));
 const sentEvent = (to, name, value, note) => playEvent('sent', { amount: nim(value), note, title: T.evSent, sub: T.evSentSub(label(to, name)) });
 let seenIncoming = null;
 async function loadMe() {
-  me.address = await wallet.address().catch(() => null);
+  me.all = await wallet.addresses().catch(() => []);
+  me.address = me.all[0] || null;
   if (!me.address) return;
-  const [n, b] = await Promise.all([api('/api/address/' + me.address).catch(() => ({})), api('/api/balance/' + me.address).catch(() => ({}))]);
-  me.name = n.name || null; me.balance = b.value ?? null;
+  const [names, bal] = await Promise.all([Promise.all(me.all.map((a) => api('/api/address/' + a).then((n) => n.name).catch(() => null))), myBalance()]);
+  me.name = names.find(Boolean) || null; me.balance = bal;
 }
 
 let timer = null;
@@ -239,8 +250,8 @@ ROUTES.home = async () => {
   const retry = $('#retry'); if (retry) retry.onclick = async () => { retry.disabled = true; await loadMe(); render('home'); };
   if (!me.address) return;
   const refresh = async () => {
-    const [b, inc] = await Promise.all([api('/api/balance/' + me.address).catch(() => null), api('/api/incoming/' + me.address).catch(() => null)]);
-    if (b) { me.balance = b.value; const el = $('.balance b'); if (el) el.textContent = nim(b.value, 2); }
+    const [b, inc] = await Promise.all([myBalance(), myIncoming()]);
+    if (b != null) { me.balance = b; const el = $('.balance b'); if (el) el.textContent = nim(b, 2); }
     const box = $('#letters'); if (!box || !inc) return;
     const list = inc.slice(-6).reverse();
     const fresh = seenIncoming ? inc.filter((t) => !seenIncoming.has(t.hash)) : [];
@@ -341,7 +352,7 @@ ROUTES.req = async (d) => {
   let r;
   try { r = await api('/api/request/' + d.id); } catch { return screen(`${backBtn(T.notFound)}`); }
   if (r.as && compact(r.asAddress) !== compact(r.to)) return ROUTES.fake(r);
-  if (me.address && compact(r.to) === me.address) return ownRequest(r);
+  if (me.address && isMine(r.to)) return ownRequest(r);
   return incoming(r);
 };
 
@@ -424,7 +435,7 @@ async function personAddress(p) {
 ROUTES.splitv = async (d) => {
   let s;
   try { s = await api('/api/split/' + d.id); } catch { return screen(`${backBtn(T.notFound)}`); }
-  const mine = me.address && compact(s.to) === me.address;
+  const mine = me.address && isMine(s.to);
   const draw = async (s) => {
     const stamped = s.parts.filter((p) => p.status === 'paid').length;
     const addrs = await Promise.all(s.parts.map((p) => personAddress(p.person)));
@@ -472,7 +483,7 @@ ROUTES.name = async () => {
       const r = await api('/api/name/' + v).catch(() => null);
       if (my !== seq || !r) return;
       state = r;
-      $('#st').innerHTML = r.invalid ? `<span class="ok warn">${esc(T.invalid)}</span>` : r.reserved ? `<span class="ok warn">${esc(T.reserved)}</span>` : r.address ? `<span class="ok warn">${esc(T.taken(compact(r.address) === me.address ? T.mine : short(r.address)))}</span>` : `<span class="ok">${CHECK}${esc(T.free)}</span>`;
+      $('#st').innerHTML = r.invalid ? `<span class="ok warn">${esc(T.invalid)}</span>` : r.reserved ? `<span class="ok warn">${esc(T.reserved)}</span>` : r.address ? `<span class="ok warn">${esc(T.taken(isMine(r.address) ? T.mine : short(r.address)))}</span>` : `<span class="ok">${CHECK}${esc(T.free)}</span>`;
       recipe(v, r.price || 0);
       $('#go').disabled = !(reg.open && r.free);
       if (r.free) $('#go').textContent = `${T.engrave} · ${nim(r.price)} NIM`;
@@ -487,7 +498,7 @@ ROUTES.name = async () => {
     const until = Date.now() + 120000;
     every(3000, async () => {
       const r = await api('/api/name/' + name).catch(() => null);
-      if (r?.address && compact(r.address) === me.address) {
+      if (r?.address && isMine(r.address)) {
         clearInterval(timer);
         $('#br').classList.add('engrave'); $('#rt').textContent = name + '.nim';
         $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>`;
