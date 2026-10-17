@@ -62,7 +62,7 @@ const T = {
 
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const API = LOCAL ? '' : 'https://signal.heylogram.tv/pigeonapi';
-const SITE = LOCAL ? location.origin : 'https://pigeon.heylogram.com';
+const SITE = 'https://pigeon.heylogram.com';
 const IN_FRAME = (() => { try { return window.parent !== window; } catch { return true; } })();
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

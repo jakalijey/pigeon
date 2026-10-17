@@ -8,7 +8,7 @@ import { paymentsFor, isValidName } from './rules.mjs';
 
 const ROOT = new URL('.', import.meta.url);
 const cfgFile = new URL('config.json', ROOT);
-const cfg = { port: 5290, host: '127.0.0.1', network: 'MainAlbatross', registry: '', prices: [[2, 1000e5], [3, 500e5], [4, 200e5], [5, 50e5]], data: 'data', web: '../web', ...(existsSync(cfgFile) ? JSON.parse(readFileSync(cfgFile, 'utf8')) : {}) };
+const cfg = { port: 5290, host: '127.0.0.1', network: 'MainAlbatross', registry: '', prices: [[2, 1000e5], [3, 500e5], [4, 200e5], [5, 50e5]], data: 'data', web: '../web/dist', ...(existsSync(cfgFile) ? JSON.parse(readFileSync(cfgFile, 'utf8')) : {}) };
 if (process.env.NIM_REGISTRY) cfg.registry = process.env.NIM_REGISTRY;
 if (process.env.PORT) cfg.port = Number(process.env.PORT);
 if (process.env.HOST) cfg.host = process.env.HOST;

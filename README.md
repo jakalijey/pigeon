@@ -54,7 +54,7 @@ npm test
 npm start
 ```
 
-The web app is plain HTML, CSS and JavaScript in `web/`. The local server serves it as is. For hosting, `web/build.mjs` bundles everything (including the Identicons) into one `web/dist/index.html` next to the icons and the manifest:
+The web app is plain HTML, CSS and JavaScript in `web/`. `web/build.mjs` bundles everything (including the Identicons and the QR code library) into one `web/dist/index.html` next to the icons and the manifest. Build it before starting the server, which serves `web/dist`:
 
 ```bash
 cd web
@@ -64,7 +64,7 @@ npm run build
 
 Set `registry` in `config.json` to the address that receives name registrations. Without it, the app still sends, requests and splits, and the ring screen says the registry opens soon. The server connects to Nimiq mainnet as a light client. The first sync takes a few seconds, and the API answers `503 syncing` until then.
 
-Open `http://127.0.0.1:5290` inside Nimiq Pay, or in a browser to look around.
+Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nimiq Pay.
 
 ## API
 
