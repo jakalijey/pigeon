@@ -35,7 +35,7 @@ export async function createRegistry({ chain, registry, prices, cacheFile, log =
     if (!isValidName(name)) return { name, invalid: true };
     if (RESERVED.has(name)) return { name, reserved: true };
     const r = table.names.get(name);
-    return r ? { name, address: r.owner, since: r.time, height: r.height, tx: r.hash } : { name, free: true, price: priceOf(name, prices) };
+    return r ? { name, address: r.owner, since: r.time, height: r.height, tx: r.hash, index: [...table.names.keys()].indexOf(name) + 1 } : { name, free: true, price: priceOf(name, prices) };
   }
   const reverse = (address) => table.primary.get(compact(address)) || null;
   const info = () => ({ open: true, registry, prices, names: table.names.size });

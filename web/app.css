@@ -169,3 +169,6 @@ html.inpay .toast{bottom:calc(146px + var(--bottom))}
 html.typing .bar,html.inpay.typing .bar{bottom:8px}
 html.typing #app{padding-bottom:96px}
 .envelope input.who::placeholder{font-size:17px;font-weight:600;color:var(--muted);opacity:.85}
+.ringstage{width:min(360px,100%);margin:0 auto -8px;aspect-ratio:360/300}
+.ringstage svg{width:100%;height:100%;display:block}
+.ringstage.empty{opacity:.55}

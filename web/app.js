@@ -2,6 +2,7 @@ import { perched, flying, logo, postmark } from './pigeon.js?v=2';
 import { playSplash } from './splash.js?v=2';
 import { playEvent } from './events.js?v=3';
 import qrcode from 'qrcode-generator';
+import { ring } from './ring.js?v=1';
 
 const host = window.nimiqPay?.language || navigator.language || 'en';
 const pickLang = (l) => (String(l || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
@@ -506,17 +507,25 @@ ROUTES.name = async () => {
   if (!me.address) return go('home');
   const reg = await api('/api/registry').catch(() => ({ open: false }));
   let state = null;
-  screen(`${backBtn(T.ringT)}<div class="bigring" id="br"><div class="outer"></div><div class="inner"></div><div class="text" id="rt">${esc(me.name ? me.name + '.nim' : '')}</div></div>
+  screen(`${backBtn(T.ringT)}<div class="ringstage" id="br"></div>
 <div class="namebox"><input id="nm" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="32" placeholder="${esc(lang === 'tr' ? 'isim' : 'name')}"><em>.nim</em></div><span id="st"></span>
 <div class="recipe" id="rc"></div><p class="hint">${esc(reg.open ? T.ringHint : T.closed)}</p>`,
   `<button class="btn main" id="go" disabled>${esc(reg.open ? T.engrave : T.closed)}</button>`);
   const recipe = (name, price) => { $('#rc').innerHTML = `<div><span>${esc(T.price)}</span><b>${price ? nim(price) + ' NIM' : '—'}</b></div><div><span>${esc(T.forever)}</span><b>${esc(T.foreverV)}</b></div><div><span>${esc(T.how)}</span><b>${esc(T.howV)} <code>nim:${esc(name || '…')}</code></b></div><div><span>${esc(T.rule)}</span><b>${esc(T.ruleV)}</b></div>`; };
   recipe('', 0);
+  const face = await identicon(me.address).catch(() => '');
+  const showRing = (name, info, animate) => {
+    const r = ring({ name: name || (lang === 'tr' ? 'isim' : 'name'), identicon: face, serial: info?.index || null, year: info?.since ? new Date(info.since).getFullYear() : new Date().getFullYear() });
+    const box = $('#br'); if (!box) return Promise.resolve();
+    box.innerHTML = r.svg; box.classList.toggle('empty', !name);
+    return animate ? r.play(box) : (r.still(box), Promise.resolve());
+  };
+  showRing(me.name, me.name ? await api('/api/name/' + me.name).catch(() => null) : null, false);
   let seq = 0, deb;
   $('#nm').oninput = () => {
     const v = $('#nm').value.toLowerCase().replace(/[^a-z0-9-]/g, '');
     if (v !== $('#nm').value) $('#nm').value = v;
-    $('#rt').textContent = v ? v + '.nim' : (me.name ? me.name + '.nim' : '');
+    showRing(v || me.name, null, false);
     state = null; $('#go').disabled = true; recipe(v, 0); $('#st').innerHTML = '';
     clearTimeout(deb);
     if (!v) return;
@@ -542,10 +551,9 @@ ROUTES.name = async () => {
       const r = await api('/api/name/' + name).catch(() => null);
       if (r?.address && isMine(r.address)) {
         clearInterval(timer);
-        $('#br').classList.add('engrave'); $('#rt').textContent = name + '.nim';
-        $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>`;
         if (!me.name) me.name = name;
-        playEvent('ring', { name, lang, title: T.yours, sub: T.evRingSub(name + '.nim') });
+        $('#st').innerHTML = '';
+        showRing(name, r, true).then(() => { $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>`; });
         b.textContent = T.done; b.disabled = false; b.onclick = () => go('home');
       } else if (r?.address || Date.now() > until) { clearInterval(timer); toast(r?.address ? T.taken(short(r.address)) : T.failed); b.textContent = T.done; b.disabled = false; b.onclick = () => go('home'); }
     });
