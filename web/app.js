@@ -223,8 +223,16 @@ async function loadMe() {
   me.all = await wallet.addresses().catch(() => []);
   me.address = me.all[0] || null;
   if (!me.address) return;
-  const [names, bal] = await Promise.all([Promise.all(me.all.map((a) => api('/api/address/' + a).then((n) => n.name).catch(() => null))), myBalance()]);
-  me.name = names.find(Boolean) || null; me.balance = bal;
+  const [names, bals] = await Promise.all([
+    Promise.all(me.all.map((a) => api('/api/address/' + a).then((n) => n.name || null).catch(() => null))),
+    Promise.all(me.all.map((a) => api('/api/balance/' + a).then((b) => b.value ?? null).catch(() => null))),
+  ]);
+  const named = names.findIndex(Boolean);
+  let main = named;
+  if (main < 0) { main = 0; bals.forEach((v, i) => { if ((v || 0) > (bals[main] || 0)) main = i; }); }
+  me.address = me.all[main];
+  me.name = named >= 0 ? names[named] : null;
+  me.balance = bals.some((v) => v != null) ? bals.reduce((x, v) => x + (v || 0), 0) : null;
 }
 
 let timer = null;
