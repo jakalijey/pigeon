@@ -63,6 +63,9 @@ const TEXTS = {
 let T = TEXTS[lang];
 function setLang(l) { if (!l || pickLang(l) === lang) return; lang = pickLang(l); T = TEXTS[lang]; document.documentElement.lang = lang; }
 const markPay = () => document.documentElement.classList.add('inpay');
+const typing = (on) => document.documentElement.classList.toggle('typing', on);
+document.addEventListener('focusin', (e) => { if (e.target.matches('input:not([type=checkbox]), textarea')) typing(true); });
+document.addEventListener('focusout', () => setTimeout(() => typing(!!document.activeElement?.matches('input:not([type=checkbox]), textarea')), 50));
 if (window.nimiq || window.nimiqPay || window.ReactNativeWebView) markPay();
 
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
