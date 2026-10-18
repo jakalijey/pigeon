@@ -86,15 +86,29 @@ Amounts are in luna (1 NIM = 100,000 luna).
 
 ## Roadmap
 
-The app keeps growing after the first release, the way ENS grew around Ethereum names. Planned updates, in order:
+Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
 
-1. **Profiles.** A name can carry a display name, a short bio and links, set with signed notes from the owner.
-2. **Transfer and sale.** The owner hands a name to another address with one signed transaction, and can list it for a price.
-3. **Subnames.** `shop.mert.nim` and `team.mert.nim`, created by the owner of `mert.nim`.
-4. **Fair registration.** Commit and reveal, so nobody can copy a pending registration from the mempool, plus automatic refunds for losing payments.
-5. **Merchant QR.** A printed code for a shop. The customer scans it, sees the shop's name and Identicon, and pays the amount on screen.
-6. **Community jar.** A shared pot with a name, where a group collects money for something and everyone sees who paid.
-7. **Name search for other apps.** A small public library so any Nimiq app can turn `mert.nim` into an address with the same rules.
+**November 2026: Pay at the shop**
+- Merchant QR code: a shop prints its own code; customers scan it, see the shop's name and Identicon, and pay.
+- Spanish, next to English and Turkish.
+- Profiles: a display name and a short line on every name.
+
+**December 2026: Names that move**
+- Transfer a name to another address, or list it for sale at a price.
+- Fair registration: commit and reveal, so a pending registration cannot be copied, and automatic refunds for losing payments.
+
+**January 2027: Money together**
+- Community jar: a group collects for a shared goal and everyone sees who paid.
+- Repeating requests for monthly dues or a shared rent.
+
+**When 100 names are registered**
+- Subnames such as `cafe.pigeon.nim`, created by the owner of the parent name.
+
+**When 1,000 names are registered**
+- A small open library so any Nimiq app can turn `mert.nim` into an address with the same rules.
+
+**Long term: the neighbourhood fund**
+People who live together pay into one transparent fund for something they need, a repair, a bridge, a playground. Offers are public, the best value wins, and the money is held in a Nimiq contract and released when the work is done. One name, one voice. No debt, no middlemen, everything on chain.
 
 ## Built with
 
