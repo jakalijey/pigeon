@@ -172,3 +172,4 @@ html.typing #app{padding-bottom:96px}
 .ringstage{width:min(360px,100%);margin:0 auto -8px;aspect-ratio:360/300}
 .ringstage svg{width:100%;height:100%;display:block}
 .ringstage.empty{opacity:.55}
+.ringstage:not(.empty){cursor:pointer}

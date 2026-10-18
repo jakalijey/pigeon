@@ -520,7 +520,9 @@ ROUTES.name = async () => {
     box.innerHTML = r.svg; box.classList.toggle('empty', !name);
     return animate ? r.play(box) : (r.still(box), Promise.resolve());
   };
-  showRing(me.name, me.name ? await api('/api/name/' + me.name).catch(() => null) : null, false);
+  const mine = me.name ? await api('/api/name/' + me.name).catch(() => null) : null;
+  showRing(me.name, mine, false);
+  $('#br').onclick = () => { if (me.name && !$('#nm').value) showRing(me.name, mine, true); };
   let seq = 0, deb;
   $('#nm').oninput = () => {
     const v = $('#nm').value.toLowerCase().replace(/[^a-z0-9-]/g, '');
