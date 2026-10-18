@@ -13,7 +13,7 @@ const TEXTS = {
     app: 'Pigeon', tagline: 'Nimiq’s new form', send: 'Send', request: 'Request', split: 'Split', ring: 'Get ring',
     noRing: 'No ring yet', letters: 'Letters for you', noLetters: 'No letters this week.',
     openInPay: 'Open this app in Nimiq Pay to send and receive.', retry: 'Try again', flyHome: 'Pigeon flies inside the Nimiq Pay wallet.', scanQr: 'Scan with your phone and Pigeon opens in Nimiq Pay.', openPay: 'Open in Nimiq Pay', noPay: 'No Nimiq Pay yet?', connecting: 'Reaching the Nimiq network…', walletWait: 'Connecting to Nimiq Pay…',
-    write: 'Write a letter', to: 'TO', toHint: 'name.nim or NQ address', ringOk: 'Ring matches', plain: 'Plain address, no ring', noName: 'Nobody wears this ring',
+    write: 'Write a letter', to: 'TO', toHint: 'name.nim or NQ address', ringOk: 'Ring matches', plain: 'Plain address, no ring', noName: 'Nobody wears this ring', moved: 'Wallet vault address: sending to its owner’s wallet',
     stampHint: 'The picture on the stamp belongs to this address. Check it matches the one on your friend’s screen.',
     notePh: 'Add a note', noteHint: 'The note is written on chain. Anyone can read it.', seal: 'Seal and fly', sending: 'Waiting for your wallet…',
     delivered: 'DELIVERED · NIMIQ POST · ', note: 'Note', fee: 'Fee', tx: 'Transaction', share: 'Share', done: 'Done',
@@ -38,7 +38,7 @@ const TEXTS = {
     app: 'Güvercin', tagline: 'Nimiq’in yeni formu', send: 'Gönder', request: 'İste', split: 'Böl', ring: 'Halka al',
     noRing: 'Henüz halka yok', letters: 'Sana gelen mektuplar', noLetters: 'Bu hafta mektup yok.',
     openInPay: 'Gönderip almak için bu uygulamayı Nimiq Pay içinde aç.', retry: 'Tekrar dene', flyHome: 'Güvercin, Nimiq Pay cüzdanının içinde uçar.', scanQr: 'Telefonunla okut, Güvercin Nimiq Pay’de açılsın.', openPay: 'Nimiq Pay’de aç', noPay: 'Nimiq Pay yok mu?', connecting: 'Nimiq ağına bağlanılıyor…', walletWait: 'Nimiq Pay’e bağlanılıyor…',
-    write: 'Mektup yaz', to: 'KİME', toHint: 'isim.nim ya da NQ adresi', ringOk: 'Halkası tutuyor', plain: 'Düz adres, halkası yok', noName: 'Bu halkayı takan yok',
+    write: 'Mektup yaz', to: 'KİME', toHint: 'isim.nim ya da NQ adresi', ringOk: 'Halkası tutuyor', plain: 'Düz adres, halkası yok', noName: 'Bu halkayı takan yok', moved: 'Cüzdan kasası adresi: sahibinin cüzdanına gidecek',
     stampHint: 'Puldaki resim bu adrese özel. Arkadaşının ekranındakiyle aynı mı, bir bak.',
     notePh: 'Bir not ekle', noteHint: 'Not zincire yazılır, herkes görebilir.', seal: 'Mühürle ve uçur', sending: 'Cüzdanın onayı bekleniyor…',
     delivered: 'ULAŞTI · NIMIQ POSTASI · ', note: 'Not', fee: 'Ücret', tx: 'İşlem', share: 'Paylaş', done: 'Tamam',
@@ -224,14 +224,15 @@ async function loadMe() {
   me.address = me.all[0] || null;
   if (!me.address) return;
   const [names, bals] = await Promise.all([
-    Promise.all(me.all.map((a) => api('/api/address/' + a).then((n) => n.name || null).catch(() => null))),
+    Promise.all(me.all.map((a) => api('/api/address/' + a).catch(() => ({})))),
     Promise.all(me.all.map((a) => api('/api/balance/' + a).then((b) => b.value ?? null).catch(() => null))),
   ]);
-  const named = names.findIndex(Boolean);
-  let main = named;
-  if (main < 0) { main = 0; bals.forEach((v, i) => { if ((v || 0) > (bals[main] || 0)) main = i; }); }
+  const plain = (i) => names[i]?.type !== 'htlc';
+  let main = me.all.findIndex((_, i) => plain(i) && names[i]?.name);
+  if (main < 0) main = me.all.findIndex((_, i) => plain(i));
+  if (main < 0) main = 0;
   me.address = me.all[main];
-  me.name = named >= 0 ? names[named] : null;
+  me.name = names[main]?.name || names.find((n) => n?.name)?.name || null;
   me.balance = bals.some((v) => v != null) ? bals.reduce((x, v) => x + (v || 0), 0) : null;
 }
 
@@ -304,7 +305,11 @@ ROUTES.home = async () => {
 async function resolveWho(raw) {
   const v = raw.trim();
   if (!v) return null;
-  if (isAddr(v)) { const r = await api('/api/address/' + compact(v)).catch(() => ({})); return { address: compact(v), name: r.name || null, plain: !r.name }; }
+  if (isAddr(v)) {
+    const r = await api('/api/address/' + compact(v)).catch(() => ({}));
+    const address = r.type === 'htlc' && r.creator ? compact(r.creator) : compact(v);
+    return { address, name: r.name || null, plain: !r.name, moved: address !== compact(v) };
+  }
   const name = v.toLowerCase().replace(/\.nim$/, '');
   const r = await api('/api/name/' + encodeURIComponent(name)).catch(() => ({}));
   return r.address ? { address: compact(r.address), name } : { missing: true, name };
@@ -337,7 +342,7 @@ ROUTES.send = (d) => {
       who = r;
       $('#pst').innerHTML = r?.address ? idn(r.address, 52) : '';
       $('#addr').textContent = r?.address ? short(r.address) : '';
-      $('#check').innerHTML = !r ? '' : r.missing ? `<span class="ok warn">${esc(T.noName)}</span>` : r.plain ? `<span class="ok warn">${esc(T.plain)}</span>` : `<span class="ok">${CHECK}${esc(T.ringOk)}</span>`;
+      $('#check').innerHTML = (r?.moved ? `<span class="ok warn">${esc(T.moved)}</span> ` : '') + (!r ? '' : r.missing ? `<span class="ok warn">${esc(T.noName)}</span>` : r.plain ? `<span class="ok warn">${esc(T.plain)}</span>` : `<span class="ok">${CHECK}${esc(T.ringOk)}</span>`);
       paintIdenticons(app()); upd();
     }, 300);
   };

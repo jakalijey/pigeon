@@ -26,6 +26,17 @@ export async function createChain({ network = 'MainAlbatross', log = console.log
   const unlisten = (id) => client.removeListener(id);
   const head = () => client.getHeadHeight();
   const balance = async (address) => Number((await client.getAccount(address)).balance ?? 0);
+  const account = async (address) => client.getAccount(address);
+  const creators = new Map();
+  async function creatorOf(address) {
+    const key = String(address).replace(/\s/g, '').toUpperCase();
+    if (creators.has(key)) return creators.get(key);
+    const txs = await history(address, 0);
+    const made = txs.find((t) => t.recipientType === 'htlc' && String(t.recipient).replace(/\s/g, '').toUpperCase() === key);
+    const who = made ? String(made.sender).replace(/\s/g, '').toUpperCase() : null;
+    if (who) creators.set(key, who);
+    return who;
+  }
 
-  return { history, listen, unlisten, head, balance, client };
+  return { history, listen, unlisten, head, balance, account, creatorOf, client };
 }

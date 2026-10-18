@@ -104,7 +104,11 @@ http.createServer(async (req, res) => {
         return send(res, 200, r.address ? { ...r, address: pretty(r.address) } : r);
       }
       if ((m = p.match(/^\/api\/address\/([0-9A-Za-z %]{36,80})$/)) && isAddress(compact(decodeURIComponent(m[1])))) {
-        return send(res, 200, { name: nameOf(compact(decodeURIComponent(m[1]))) });
+        const a = compact(decodeURIComponent(m[1]));
+        const acc = await chain.account(pretty(a)).catch(() => null);
+        const type = acc?.type || 'basic';
+        const creator = type === 'htlc' ? await chain.creatorOf(pretty(a)).catch(() => null) : null;
+        return send(res, 200, { name: nameOf(a) || (creator ? nameOf(creator) : null), type, creator: creator ? pretty(creator) : null });
       }
       if ((m = p.match(/^\/api\/balance\/([0-9A-Za-z %]{36,80})$/)) && isAddress(compact(decodeURIComponent(m[1])))) {
         return send(res, 200, { value: await chain.balance(pretty(decodeURIComponent(m[1]))) });
@@ -113,8 +117,12 @@ http.createServer(async (req, res) => {
         const a = compact(decodeURIComponent(m[1]));
         const since = Math.max(0, Number(u.searchParams.get('since')) || (await chain.head()) - 60 * 60 * 24 * 7);
         const txs = await historyOf(pretty(a), since, 8000);
-        return send(res, 200, txs.filter((t) => compact(t.recipient) === a && t.state !== 'invalidated' && t.state !== 'expired' && t.executionResult !== false)
-          .map((t) => ({ from: pretty(t.sender), fromName: nameOf(t.sender), value: t.value, note: text(note(t), 64), hash: t.transactionHash, height: t.blockHeight, time: t.timestamp, state: t.state })));
+        const ok = txs.filter((t) => compact(t.recipient) === a && t.state !== 'invalidated' && t.state !== 'expired' && t.executionResult !== false);
+        const rows = await Promise.all(ok.map(async (t) => {
+          const owner = t.senderType === 'htlc' ? (await chain.creatorOf(t.sender).catch(() => null)) || compact(t.sender) : compact(t.sender);
+          return { from: pretty(owner), fromName: nameOf(owner), value: t.value, note: text(note(t), 64), hash: t.transactionHash, height: t.blockHeight, time: t.timestamp, state: t.state };
+        }));
+        return send(res, 200, rows);
       }
 
       if (p === '/api/request' && req.method === 'POST') {

@@ -13,21 +13,22 @@ export async function createRegistry({ chain, registry, prices, cacheFile, log =
   const save = () => {
     try { writeFileSync(cacheFile + '.tmp', JSON.stringify([...txs.values()])); renameSync(cacheFile + '.tmp', cacheFile); } catch (e) { log('registry: cache not saved', e.message); }
   };
-  const add = (t) => {
+  const add = async (t) => {
     const old = txs.get(t.transactionHash);
-    if (old && old.state === t.state) return false;
-    txs.set(t.transactionHash, { transactionHash: t.transactionHash, sender: t.sender, recipient: t.recipient, value: t.value, data: t.data, state: t.state, executionResult: t.executionResult, blockHeight: t.blockHeight, timestamp: t.timestamp });
+    if (old && old.state === t.state && 'payer' in old) return false;
+    let sender = t.sender;
+    if (t.senderType === 'htlc') sender = (await chain.creatorOf(t.sender).catch(() => null)) || t.sender;
+    txs.set(t.transactionHash, { transactionHash: t.transactionHash, sender, payer: t.sender, senderType: t.senderType, recipient: t.recipient, value: t.value, data: t.data, state: t.state, executionResult: t.executionResult, blockHeight: t.blockHeight, timestamp: t.timestamp });
     return true;
   };
 
-  const since = Math.max(0, ...[...txs.values()].map((t) => t.blockHeight || 0)) - 100;
-  for (const t of await chain.history(registry, Math.max(0, since))) add(t);
+  for (const t of await chain.history(registry, 0)) await add(t);
   rebuild(); save();
   log(`registry: ${table.names.size} names from ${txs.size} transactions`);
 
   await chain.listen([registry], (t) => {
     if (compact(t.recipient) !== compact(registry)) return;
-    if (add(t)) { rebuild(); save(); }
+    add(t).then((changed) => { if (changed) { rebuild(); save(); } });
   });
 
   function lookup(name) {

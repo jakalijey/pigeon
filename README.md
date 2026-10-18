@@ -27,6 +27,8 @@ A registration is a transaction that:
 3. pays at least the price of that name,
 4. is included in a block and executed successfully.
 
+If the payment comes from a wallet vault (an HTLC contract, which is how Nimiq Pay holds spendable funds), the name goes to the address that created that vault, which is the wallet's own top-up address. A vault cannot receive later payments, so this keeps every name payable. Anyone can check it: the vault's creation transaction is public.
+
 The earliest valid registration of a name wins: lower block height first, and inside the same block the lower transaction hash. Later payments for a name that is already taken do not change its owner. The first name an address registers is its primary name, used to show who you are.
 
 Prices depend on length: shorter names cost more. A few names such as `nimiq`, `admin` and `wallet` are reserved. The exact list and prices are in `server/config.json` and `server/rules.mjs`.
