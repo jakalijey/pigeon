@@ -166,5 +166,6 @@ button.link{align-self:flex-start;background:none;border:0;padding:0;color:var(-
 html.inpay #app{padding-bottom:calc(152px + var(--bottom))}
 html.inpay .bar{bottom:calc(74px + var(--bottom))}
 html.inpay .toast{bottom:calc(146px + var(--bottom))}
-html.typing .bar{display:none}
+html.typing .bar,html.inpay.typing .bar{bottom:8px}
+html.typing #app{padding-bottom:96px}
 .envelope input.who::placeholder{font-size:17px;font-weight:600;color:var(--muted);opacity:.85}

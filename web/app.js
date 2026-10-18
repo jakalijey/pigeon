@@ -68,7 +68,20 @@ const keyboardCheck = () => {
   const h = Math.round(window.visualViewport?.height || innerHeight);
   if (h > fullHeight) fullHeight = h;
   document.documentElement.classList.toggle('typing', h < fullHeight - 120);
+  keepVisible();
 };
+function keepVisible() {
+  const el = document.activeElement;
+  if (!el || !el.matches?.('input, textarea')) return;
+  setTimeout(() => {
+    const bar = document.getElementById('bar');
+    const limit = bar && bar.children.length ? bar.getBoundingClientRect().top - 12 : (window.visualViewport?.height || innerHeight) - 12;
+    const r = el.getBoundingClientRect();
+    if (r.bottom > limit) window.scrollBy({ top: r.bottom - limit, behavior: 'smooth' });
+    else if (r.top < 12) window.scrollBy({ top: r.top - 12, behavior: 'smooth' });
+  }, 250);
+}
+document.addEventListener('focusin', keepVisible);
 addEventListener('resize', keyboardCheck);
 window.visualViewport?.addEventListener('resize', keyboardCheck);
 addEventListener('orientationchange', () => { fullHeight = 0; setTimeout(keyboardCheck, 300); });
