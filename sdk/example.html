@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nimiq Names SDK</title>
+<style>
+  :root { --amber: #D97706; --teal: #0D9488; --ink: #2B1B0B; --soft: #7A6650; --bg: #FFF6E6; --card: #FFFDF8; --line: rgba(122,82,48,.18); }
+  @media (prefers-color-scheme: dark) { :root { --ink: #F7EBD6; --soft: #BBA88A; --bg: #1A1208; --card: #261A0C; --line: rgba(255,190,90,.16); } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "Segoe UI", system-ui, sans-serif; }
+  main { padding: 28px clamp(16px, 4vw, 48px); display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  header { padding: 28px clamp(16px, 4vw, 48px) 0; }
+  h1 { margin: 0; font-size: 26px; } h1 b { color: var(--amber); }
+  header p { margin: 6px 0 0; color: var(--soft); }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+  h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--amber); }
+  .row { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 14px ui-monospace, Consolas, monospace; }
+  button { padding: 9px 14px; border: 0; border-radius: 10px; background: var(--amber); color: #fff; font: 600 14px system-ui, sans-serif; cursor: pointer; }
+  button.second { background: var(--teal); }
+  pre { margin: 10px 0 0; white-space: pre-wrap; word-break: break-word; font: 13px ui-monospace, Consolas, monospace; color: var(--soft); min-height: 1.5em; }
+  code.use { display: block; white-space: pre; overflow-x: auto; font: 12.5px ui-monospace, Consolas, monospace; color: var(--soft); }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; background: rgba(13,148,136,.15); color: var(--teal); font: 600 13px system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Nimiq Names <b>SDK</b></h1>
+  <p>Resolve .nim names, show them next to addresses, log users in with their wallet and pay by name. One import, no keys.</p>
+</header>
+<main>
+  <section>
+    <h2>Name → address</h2>
+    <div class="row"><input id="name" value="mando.nim"><button id="resolveBtn">Resolve</button></div>
+    <pre id="resolveOut"></pre>
+  </section>
+  <section>
+    <h2>Address → name (badge)</h2>
+    <div class="row"><input id="address" value="NQ44 XGY3 JVJT U1X2 XHBS 6852 GMFG TB1M K6X5"><button id="lookupBtn">Look up</button></div>
+    <pre>Badge: <span class="badge" id="badge">–</span></pre>
+  </section>
+  <section>
+    <h2>Is a name free?</h2>
+    <div class="row"><input id="priceName" value="mygame"><button id="priceBtn">Check</button></div>
+    <pre id="priceOut"></pre>
+  </section>
+  <section>
+    <h2>Login and pay (needs a Nimiq wallet)</h2>
+    <div class="row"><button class="second" id="loginBtn">Log in with Nimiq</button><button id="payBtn">Pay 1 NIM to mando.nim</button></div>
+    <pre id="walletOut"></pre>
+  </section>
+  <section style="grid-column: 1 / -1">
+    <h2>Use it</h2>
+    <code class="use">&lt;script type="module"&gt;
+  import { NimNames } from 'https://signal.heylogram.tv/kovanapi/nim.js';
+  const nim = NimNames({ app: 'mygame' });   // your own .nim name
+  const who = await nim.login();             // { address, name }
+  await nim.pay('mando', 1);                 // 1 NIM to mando.nim
+&lt;/script&gt;</code>
+  </section>
+</main>
+<script type="module">
+  // Live SDK; to test against a local Hive, change BASE to its address
+  const BASE = 'https://signal.heylogram.tv/kovanapi';
+  const { NimNames } = await import(BASE + '/nim.js');
+  const nim = NimNames({ app: 'pigeon' });   // replace with your own .nim name
+  const $ = (id) => document.getElementById(id);
+  const show = (id, v) => { $(id).textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); };
+  $('resolveBtn').onclick = async () => show('resolveOut', (await nim.resolve($('name').value)) || 'not registered');
+  $('lookupBtn').onclick = async () => { const n = await nim.badge($('badge'), $('address').value); if (!n) $('badge').textContent = 'no name'; };
+  $('priceBtn').onclick = async () => { const f = await nim.price($('priceName').value); show('priceOut', f.free ? `free, ${f.price} NIM` : 'taken'); };
+  $('loginBtn').onclick = async () => { try { const g = await nim.login(); show('walletOut', { address: g.address, name: g.name }); } catch (e) { show('walletOut', e.message); } };
+  $('payBtn').onclick = async () => { try { show('walletOut', await nim.pay('mando', 1)); } catch (e) { show('walletOut', e.message); } };
+</script>
+</body>
+</html>

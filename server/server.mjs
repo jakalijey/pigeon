@@ -53,6 +53,47 @@ async function historyOf(address, since, ttl = 5000) {
 
 const nameOf = (address) => registry?.reverse(address) || null;
 
+// Nimiq Pay keeps spendable NIM in an HTLC vault the user created (refund address = the user); the plain balance does not show it.
+// Scanning history is slow (minutes), so results are kept for 15 min and registered owners are precomputed every 10 min.
+const vaultCache = new Map();
+// vault results survive restarts: written to disk, read at start (a stale entry answers at once and refreshes in the background)
+const vaultFile = fileURLToPath(new URL('vault-cache.json', dataDir));
+try { for (const [a, x] of JSON.parse(readFileSync(vaultFile, 'utf8'))) vaultCache.set(a, x); } catch {}
+let vaultSaveTimer = null;
+const vaultSave = () => { clearTimeout(vaultSaveTimer); vaultSaveTimer = setTimeout(() => { try { writeFileSync(vaultFile + '.tmp', JSON.stringify([...vaultCache])); renameSync(vaultFile + '.tmp', vaultFile); } catch {} }, 2000); };
+const vaultBusy = new Map();
+async function vaultsOf(a, maxAge = 15 * 60000) {
+  const hit = vaultCache.get(a);
+  if (hit && Date.now() - hit.at < maxAge) return hit.v;
+  // serve a stale entry right away and recompute in the background (the first computation can take minutes)
+  if (hit && maxAge > 10 * 60000) { if (!vaultBusy.has(a)) vaultBusy.set(a, vaultsOf(a, 0).catch(() => {}).finally(() => vaultBusy.delete(a))); return hit.v; }
+  // with no entry the request does not wait (nginx cuts at 30 s): plain balance now, vaults in the background; the client asks again shortly
+  if (!hit && maxAge > 10 * 60000) {
+    if (!vaultBusy.has(a)) vaultBusy.set(a, vaultsOf(a, 0).catch(() => {}).finally(() => vaultBusy.delete(a)));
+    const value = await chain.balance(pretty(a)).catch(() => 0);
+    return { value, vaults: [], total: value, pending: true };
+  }
+  const txs = await historyOf(pretty(a), 0, 300000);
+  const candidates = [...new Set(txs.filter((t) => t.recipientType === 'htlc' && compact(t.sender) === a && t.executionResult !== false && t.state !== 'invalidated' && t.state !== 'expired').map((t) => compact(t.recipient)))].slice(-50);
+  const vaults = [];
+  for (const v of candidates) {
+    const acc = await chain.account(pretty(v)).catch(() => null);
+    if (acc?.type === 'htlc' && compact(acc.sender) === a && acc.balance > 0) vaults.push({ address: pretty(v), value: acc.balance, timeout: acc.timeout ?? null });
+  }
+  const value = await chain.balance(pretty(a));
+  const v = { value, vaults, total: value + vaults.reduce((t, x) => t + x.value, 0), at: Date.now() };
+  vaultCache.set(a, { at: Date.now(), v });
+  vaultSave();
+  if (vaultCache.size > 5000) vaultCache.delete(vaultCache.keys().next().value);
+  return v;
+}
+async function warmVaults() {
+  if (!chain || !registry) return;
+  for (const r of registry.list()) await vaultsOf(compact(r.address), 10 * 60000).catch(() => {});
+}
+setInterval(() => warmVaults().catch(() => {}), 10 * 60000).unref?.();
+setTimeout(() => warmVaults().catch(() => {}), 30000).unref?.();
+
 async function refreshRequest(r) {
   const found = paymentsFor(r, await historyOf(pretty(r.to), Math.max(0, r.height - 5)));
   if (found.length) { r.payments.push(...found); save(); }
@@ -97,7 +138,15 @@ http.createServer(async (req, res) => {
       if (req.method === 'GET' && limited(ip + ':g', 600)) return send(res, 429, { error: 'slow_down' });
 
       if (p === '/api/registry') return send(res, 200, { ...registry.info(), registry: registry.open ? pretty(cfg.registry) : null, head: await chain.head() });
+      if (p === '/api/names') return send(res, 200, registry.list().map((r) => ({ ...r, address: pretty(r.address), subs: r.subs.map(pretty) })));
 
+      if (p === '/api/gift') return send(res, 200, { open: !!registry.giftActive?.() });
+      if ((m = p.match(/^\/api\/subs\/([a-z0-9-]{1,32})$/))) return send(res, 200, (registry.subsOf?.(m[1]) || []).map((r) => ({ ...r, address: pretty(r.address) })));
+      // gift code status: campaign open, slots left, last day (the code itself is never stored)
+      if ((m = p.match(/^\/api\/gift\/([A-Za-z0-9-]{4,24})$/))) {
+        const g = registry.gift?.(m[1]);
+        return send(res, 200, g ? { valid: g.left > 0 && g.until >= Date.now(), left: g.left, until: g.until, minLength: g.minLength } : { valid: false });
+      }
       if ((m = p.match(/^\/api\/name\/([^/]{1,64})$/))) {
         const r = registry.lookup(decodeURIComponent(m[1]).toLowerCase().replace(/\.nim$/, ''));
         if (!r) return send(res, 200, { closed: true });
@@ -112,6 +161,10 @@ http.createServer(async (req, res) => {
       }
       if ((m = p.match(/^\/api\/balance\/([0-9A-Za-z %]{36,80})$/)) && isAddress(compact(decodeURIComponent(m[1])))) {
         return send(res, 200, { value: await chain.balance(pretty(decodeURIComponent(m[1]))) });
+      }
+      // a name owner's total NIM: plain balance + the Nimiq Pay vaults they created. Read-only; registered owners are kept warm in the background.
+      if ((m = p.match(/^\/api\/vaults\/([0-9A-Za-z %]{36,80})$/)) && isAddress(compact(decodeURIComponent(m[1])))) {
+        return send(res, 200, await vaultsOf(compact(decodeURIComponent(m[1]))));
       }
       if ((m = p.match(/^\/api\/incoming\/([0-9A-Za-z %]{36,80})$/)) && isAddress(compact(decodeURIComponent(m[1])))) {
         const a = compact(decodeURIComponent(m[1]));

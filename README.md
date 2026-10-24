@@ -12,6 +12,8 @@ Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the ri
 - **Request.** Tie a note to the pigeon's leg (amount and reason) and share the link. When the other person pays, the request turns into "paid" by itself.
 - **Split.** Tear a bill into stamps, one per person. Each stamp gets a postmark when that person pays.
 - **Get a ring.** Register your own `.nim` name, on chain, with one payment.
+- **Sub-rings.** The owner of `pigeon.nim` can give `cafe.pigeon.nim` to any address, or open sub-names so that players claim their own.
+- **SDK for other apps.** Any website, game or Nimiq Pay mini app can resolve names, show them, log users in and pay by name. See [`sdk/`](sdk/README.md).
 - **Fake link warning.** If a request claims to come from `mert.nim` but the money would go to another address, the app blocks the payment and shows both pigeons side by side.
 
 Everything happens with real NIM on Nimiq mainnet, through the Nimiq Pay wallet. The app never holds keys or funds.
@@ -31,7 +33,20 @@ If the payment comes from a wallet vault (an HTLC contract, which is how Nimiq P
 
 The earliest valid registration of a name wins: lower block height first, and inside the same block the lower transaction hash. Later payments for a name that is already taken do not change its owner. The first name an address registers is its primary name, used to show who you are.
 
-Prices depend on length: shorter names cost more. A few names such as `nimiq`, `admin` and `wallet` are reserved. The exact list and prices are in `server/config.json` and `server/rules.mjs`.
+Prices depend on length: shorter names cost more. A few names such as `nim`, `nimiq`, `admin` and `wallet` are reserved. The exact list and prices are in `server/config.example.json` and `server/rules.mjs`.
+
+### Sub-names
+
+A sub-name has one level, like `cafe.pigeon.nim`. It is a 1 luna transaction to the registry:
+
+- `alt:cafe.pigeon:<address>`: the owner of `pigeon.nim` gives `cafe.pigeon.nim` to an address (or to themselves without an address).
+- `altac:pigeon` / `altkapa:pigeon`: the owner opens or closes sub-names. While they are open, anyone can send `alt:<sub>.pigeon` and take that sub-name for their own wallet.
+
+Only transactions from the parent's current owner count for giving, opening and closing. A sub-name given by someone else never becomes the recipient's primary name.
+
+### Gifts
+
+The registry itself can hand out names. It can send `nim:<name>` to an address to gift one name, or announce a campaign with `hediye:<fingerprint>:<count>:<YYYYMMDD>`, where the fingerprint is the first 16 hex digits of SHA-256 of a code. During a campaign anyone can send any amount with `nim:<name>:<code>`. If the code matches, slots are left and the name has at least 5 letters, the name is free. The first N people win, and each address gets at most one gift per campaign.
 
 ## How payments are matched
 
@@ -73,9 +88,14 @@ Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nim
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/api/registry` | registry address, prices, number of names, chain head |
+| GET | `/api/names` | all registered names, with their sub-name owners |
 | GET | `/api/name/:name` | owner address, or `free` with price, `reserved`, `invalid` |
 | GET | `/api/address/:address` | primary name of an address |
 | GET | `/api/balance/:address` | balance in luna |
+| GET | `/api/vaults/:address` | balance plus the Nimiq Pay vaults this address created (computed in the background; `pending` until ready) |
+| GET | `/api/subs/:name` | sub-names under a name and whether they are open |
+| GET | `/api/gift` | whether a gift campaign is open |
+| GET | `/api/gift/:code` | slots left and last day for a code (the code itself is never stored) |
 | GET | `/api/incoming/:address?since=<height>` | incoming payments with notes and sender names |
 | POST | `/api/request` | create a request `{ to, value, note, as }` |
 | GET | `/api/request/:id` | request with on-chain payments and status |
@@ -101,11 +121,9 @@ Pigeon keeps growing after the competition. The first three updates have dates; 
 - Community jar: a group collects for a shared goal and everyone sees who paid.
 - Repeating requests for monthly dues or a shared rent.
 
-**When 100 names are registered**
-- Subnames such as `cafe.pigeon.nim`, created by the owner of the parent name.
-
-**When 1,000 names are registered**
-- A small open library so any Nimiq app can turn `mert.nim` into an address with the same rules.
+**Done early (October 2026)**
+- Sub-names such as `cafe.pigeon.nim`, given by the owner of the parent name or claimed by players when the owner opens them.
+- The open library: the [SDK](sdk/README.md) lets any Nimiq app turn `mert.nim` into an address with the same rules, log users in and pay by name.
 
 **Long term: the neighbourhood fund**
 People who live together pay into one transparent fund for something they need, a repair, a bridge, a playground. Offers are public, the best value wins, and the money is held in a Nimiq contract and released when the work is done. One name, one voice. No debt, no middlemen, everything on chain.

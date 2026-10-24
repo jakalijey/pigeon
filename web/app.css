@@ -173,3 +173,17 @@ html.typing #app{padding-bottom:96px}
 .ringstage svg{width:100%;height:100%;display:block}
 .ringstage.empty{opacity:.55}
 .ringstage:not(.empty){cursor:pointer}
+
+/* hediye kodu */
+.gift { margin-top: 10px; }
+.gift summary { cursor: pointer; color: var(--muted); font-size: 14px; list-style: none; text-decoration: underline dotted; text-underline-offset: 3px; }
+.gift summary::-webkit-details-marker { display: none; }
+.gift .namebox { margin-top: 8px; }
+#hk { letter-spacing: 1.5px; text-transform: uppercase; }
+
+.gift.sub .btn { margin-top: 10px; width: 100%; }
+.gift.sub small, #sbList small { opacity: .6; font-size: .85em; }
+
+.gift.sub #sbTo { font-size: 15px; font-family: var(--mono); }
+
+#sbOpen { margin-top: 14px; width: 100%; }

@@ -30,6 +30,9 @@ const TEXTS = {
     ringT: 'Get your pigeon a ring', free: 'This ring is free', taken: (a) => `Taken by ${a}`, reserved: 'Reserved', invalid: 'Letters, digits and single dashes only',
     price: 'Engraving', forever: 'Duration', foreverV: 'Forever', how: 'How', howV: 'Note', rule: 'Rule', ruleV: 'First on chain wins',
     ringHint: 'With a ring your friends find you by name, and your pigeon always lands at the right window.',
+    subOpenOn: 'Players can take their own sub-ring: ON', subOpenOff: 'Players can take their own sub-ring: OFF', subOpenHint: 'When on, your app can let each player take name.yours.nim for their own wallet. First come, first served. You can turn it off any time.', subOpenSent: 'Sent; it changes in a few seconds',
+    subQ: (p) => `Give sub-rings under ${p}.nim`, subPh: 'name', subTo: 'Address or name.nim (empty = you)', subGive: (n) => `Give ${n}`, subLong: 'Too long: name + your name must be 22 letters or less', subTaken: 'Already taken', subBadTo: 'Address or name not found', subDone: (n) => `${n} is on its way`, subList: 'Given sub-rings', subNone: 'None yet',
+    giftQ: 'Have a gift code?', giftPh: 'GIFT CODE', giftOk: (n) => `Gift code works: free (${n} left)`, giftBad: 'This code is not valid or has run out', giftShort: 'Gift codes work for names with 5 or more letters', giftFree: 'free',
     engrave: 'Engrave the ring', engraving: 'Engraving on chain…', yours: 'The ring is yours', closed: 'Ring registry opens soon', mine: 'Your rings',
     evSent: 'Sent', evSentSub: (n) => `on its way to ${n}`, evGot: 'Received', evGotSub: (n) => `from ${n}`, evPaid: 'Paid', evPaidSub: (n) => `${n} paid your request`,
     evSplit: (k, n) => `${k} of ${n} paid`, evSplitWait: (n) => `${n}’s stamp is waiting`, evSplitAll: 'Every stamp is in', evRingSub: (n) => `you are ${n} now`, paidWord: 'PAID',
@@ -55,6 +58,9 @@ const TEXTS = {
     ringT: 'Güvercinine halka taktır', free: 'Bu halka boşta', taken: (a) => `${a} takıyor`, reserved: 'Ayrılmış', invalid: 'Yalnız harf, rakam ve tek tire',
     price: 'Kazıma ücreti', forever: 'Süre', foreverV: 'Süresiz', how: 'Nasıl', howV: 'Nota', rule: 'Kural', ruleV: 'Zincirde ilk yazan alır',
     ringHint: 'Halka takılınca arkadaşların seni isminle bulur; güvercinin hep doğru pencereye konar.',
+    subOpenOn: 'Oyuncular kendi alt halkasını alabilir: AÇIK', subOpenOff: 'Oyuncular kendi alt halkasını alabilir: KAPALI', subOpenHint: 'Açıkken uygulaman her oyuncuya isim.senin.nim halkasını kendi cüzdanına aldırabilir. İlk alan kazanır. İstediğin zaman kapatırsın.', subOpenSent: 'Gönderildi; birkaç saniyede değişir',
+    subQ: (p) => `${p}.nim altında halka ver`, subPh: 'isim', subTo: 'Adres ya da isim.nim (boş = sen)', subGive: (n) => `${n} ver`, subLong: 'Çok uzun: isim + senin ismin en çok 22 harf olmalı', subTaken: 'Bu alt halka alınmış', subBadTo: 'Adres ya da isim bulunamadı', subDone: (n) => `${n} yolda`, subList: 'Verdiğin alt halkalar', subNone: 'Henüz yok',
+    giftQ: 'Hediye kodun var mı?', giftPh: 'HEDİYE KODU', giftOk: (n) => `Hediye kodu geçerli: bedava (${n} hak kaldı)`, giftBad: 'Bu kod geçerli değil ya da hakkı bitti', giftShort: 'Hediye kodu 5 ve daha uzun isimlerde geçer', giftFree: 'bedava',
     engrave: 'Halkayı taktır', engraving: 'Zincire kazınıyor…', yours: 'Halka artık senin', closed: 'Halka defteri yakında açılıyor', mine: 'Halkaların',
     evSent: 'Uçtu', evSentSub: (n) => `${n} yolda`, evGot: 'Geldi', evGotSub: (n) => `Gönderen: ${n}`, evPaid: 'Ödendi', evPaidSub: (n) => `${n} isteğini ödedi`,
     evSplit: (k, n) => `${k}/${n} ödedi`, evSplitWait: (n) => `Bekleyen pul: ${n}`, evSplitAll: 'Bütün pullar damgalandı', evRingSub: (n) => `Yeni adın: ${n}`, paidWord: 'ÖDENDİ',
@@ -98,7 +104,14 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const compact = (a) => String(a || '').replace(/\s/g, '').toUpperCase();
 const pretty = (a) => compact(a).replace(/(.{4})/g, '$1 ').trim();
 const short = (a) => { const c = pretty(a); return c ? c.slice(0, 9) + ' … ' + c.slice(-4) : ''; };
-const isAddr = (a) => /^NQ[0-9]{2}[0-9A-Z]{32}$/.test(compact(a));
+// Nimiq address: its own alphabet (no I, O, W, Z) + IBAN mod-97 checksum, so no payment or sub-ring goes to a mistyped address
+const isAddr = (a) => {
+  const c = compact(a);
+  if (!/^NQ[0-9]{2}[0-9A-HJ-NP-VXY]{32}$/.test(c)) return false;
+  let r = 0;
+  for (const ch of c.slice(4) + c.slice(0, 4)) { const v = /[0-9]/.test(ch) ? ch : String(ch.charCodeAt(0) - 55); for (const d of v) r = (r * 10 + +d) % 97; }
+  return r === 1;
+};
 const nim = (luna, digits = 5) => (Number(luna || 0) / 1e5).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: digits });
 const toLuna = (v) => { const n = Number(String(v || '').replace(/\s/g, '').replace(',', '.')); return Number.isFinite(n) && n > 0 ? Math.round(n * 1e5) : 0; };
 const bytes = (s) => new TextEncoder().encode(s).length;
@@ -509,9 +522,11 @@ ROUTES.name = async () => {
   let state = null;
   screen(`${backBtn(T.ringT)}<div class="ringstage" id="br"></div>
 <div class="namebox"><input id="nm" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="32" placeholder="${esc(lang === 'tr' ? 'isim' : 'name')}"><em>.nim</em></div><span id="st"></span>
-<div class="recipe" id="rc"></div><p class="hint">${esc(reg.open ? T.ringHint : T.closed)}</p>`,
+<div class="recipe" id="rc"></div><p class="hint">${esc(reg.open ? T.ringHint : T.closed)}</p>
+<details class="gift" hidden><summary>${esc(T.giftQ)}</summary><div class="namebox"><input id="hk" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="24" placeholder="${esc(T.giftPh)}"></div><span id="hkSt"></span></details>
+${me.name && !me.name.includes('.') ? `<details class="gift sub"><summary>${esc(T.subQ(me.name))}</summary><div class="namebox"><input id="sb" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="22" placeholder="${esc(T.subPh)}"><em>.${esc(me.name)}.nim</em></div><div class="namebox"><input id="sbTo" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="${esc(T.subTo)}"></div><span id="sbSt"></span><button class="btn" id="sbGo" disabled>${esc(T.subGive('…'))}</button><p class="hint" id="sbList"></p><button class="btn" id="sbOpen" disabled>…</button><p class="hint">${esc(T.subOpenHint)}</p></details>` : ''}`,
   `<button class="btn main" id="go" disabled>${esc(reg.open ? T.engrave : T.closed)}</button>`);
-  const recipe = (name, price) => { $('#rc').innerHTML = `<div><span>${esc(T.price)}</span><b>${price ? nim(price) + ' NIM' : '—'}</b></div><div><span>${esc(T.forever)}</span><b>${esc(T.foreverV)}</b></div><div><span>${esc(T.how)}</span><b>${esc(T.howV)} <code>nim:${esc(name || '…')}</code></b></div><div><span>${esc(T.rule)}</span><b>${esc(T.ruleV)}</b></div>`; };
+  const recipe = (name, price, code) => { $('#rc').innerHTML = `<div><span>${esc(T.price)}</span><b>${code ? esc(T.giftFree) : price ? nim(price) + ' NIM' : '—'}</b></div><div><span>${esc(T.forever)}</span><b>${esc(T.foreverV)}</b></div><div><span>${esc(T.how)}</span><b>${esc(T.howV)} <code>nim:${esc(name || '…')}${code ? ':' + esc(code) : ''}</code></b></div><div><span>${esc(T.rule)}</span><b>${esc(T.ruleV)}</b></div>`; };
   recipe('', 0);
   const face = await identicon(me.address).catch(() => '');
   const showRing = (name, info, animate) => {
@@ -539,14 +554,82 @@ ROUTES.name = async () => {
       $('#st').innerHTML = r.invalid ? `<span class="ok warn">${esc(T.invalid)}</span>` : r.reserved ? `<span class="ok warn">${esc(T.reserved)}</span>` : r.address ? `<span class="ok warn">${esc(T.taken(isMine(r.address) ? T.mine : short(r.address)))}</span>` : `<span class="ok">${CHECK}${esc(T.free)}</span>`;
       recipe(v, r.price || 0);
       $('#go').disabled = !(reg.open && r.free);
-      if (r.free) $('#go').textContent = `${T.engrave} · ${nim(r.price)} NIM`;
+      if (r.free) goLabel();
     }, 300);
   };
+  // sub-ring: a name owner gives a name under their own → 1 luna to the registry + "alt:<sub>.<name>:<address>" (only the owner's transaction counts)
+  if ($('#sb')) {
+    const parent = me.name;
+    const listSubs = () => api('/api/subs/' + parent).then((xs) => { $('#sbList').innerHTML = `${esc(T.subList)}: ${xs.length ? xs.map((x) => `<b>${esc(x.name.split('.')[0])}</b><small>.${esc(parent)}</small>`).join(', ') : esc(T.subNone)}`; }).catch(() => {});
+    listSubs();
+    let sbState = null, sbSeq = 0, sbDeb;
+    const sbCheck = () => {
+      const v = $('#sb').value.toLowerCase().replace(/[^a-z0-9-]/g, ''); if (v !== $('#sb').value) $('#sb').value = v;
+      const to = $('#sbTo').value.trim();
+      sbState = null; $('#sbGo').disabled = true; $('#sbSt').innerHTML = ''; $('#sbGo').textContent = T.subGive(v ? `${v}.${parent}.nim` : '…');
+      clearTimeout(sbDeb); if (!v) return;
+      if (v.length + parent.length > 22) { $('#sbSt').innerHTML = `<span class="ok warn">${esc(T.subLong)}</span>`; return; }
+      sbDeb = setTimeout(async () => {
+        const my = ++sbSeq;
+        const [r, addr] = await Promise.all([
+          api('/api/name/' + v + '.' + parent).catch(() => null),
+          !to ? Promise.resolve(me.address) : isAddr(to) ? Promise.resolve(compact(to)) : api('/api/name/' + to.toLowerCase().replace(/\.nim$/, '')).then((x) => x?.address || null).catch(() => null),
+        ]);
+        if (my !== sbSeq) return;
+        if (r?.address) { $('#sbSt').innerHTML = `<span class="ok warn">${esc(T.subTaken)}</span>`; return; }
+        if (!addr) { $('#sbSt').innerHTML = `<span class="ok warn">${esc(T.subBadTo)}</span>`; return; }
+        sbState = { name: v + '.' + parent, to: compact(addr) };
+        $('#sbSt').innerHTML = `<span class="ok">${CHECK}${esc(v)}<small>.${esc(parent)}.nim</small> → ${esc(short(addr))}</span>`;
+        $('#sbGo').disabled = false;
+      }, 300);
+    };
+    $('#sb').oninput = sbCheck; $('#sbTo').oninput = sbCheck;
+    // open sub-rings: 1 luna to the registry + "altac:<name>" / "altkapa:<name>" (only the owner's transaction counts)
+    let acik = null;
+    const openShow = () => api('/api/name/' + parent).then((x) => { acik = !!x?.subsOpen; $('#sbOpen').textContent = acik ? T.subOpenOn : T.subOpenOff; $('#sbOpen').disabled = false; }).catch(() => {});
+    openShow();
+    $('#sbOpen').onclick = async () => {
+      if (acik === null) return;
+      $('#sbOpen').disabled = true;
+      try { await wallet.send(reg.registry, 1, (acik ? 'altkapa:' : 'altac:') + parent); toast(T.subOpenSent); setTimeout(openShow, 8000); }
+      catch (e) { walletError(e); $('#sbOpen').disabled = false; }
+    };
+    $('#sbGo').onclick = async () => {
+      if (!sbState) return;
+      const note = `alt:${sbState.name}:${sbState.to}`;
+      if (new TextEncoder().encode(note).length > 64) { toast(T.subLong); return; }
+      $('#sbGo').disabled = true;
+      try { await wallet.send(reg.registry, 1, note); toast(T.subDone(sbState.name + '.nim')); setTimeout(listSubs, 8000); }
+      catch (e) { walletError(e); $('#sbGo').disabled = false; }
+    };
+  }
+  // the gift box shows only while a campaign is open (no code is asked otherwise)
+  api('/api/gift').then((g) => { const d = $('details.gift'); if (d && g?.open) d.hidden = false; }).catch(() => {});
+  // gift code: free registration while a campaign is open, has slots and the name has 5+ letters (1 luna + note "nim:name:CODE")
+  let gift = null, gseq = 0, gdeb;
+  const giftOn = () => !!(gift?.valid && state?.free && state.name.length >= (gift.minLength || 5));
+  const goLabel = () => { if (state?.free) $('#go').textContent = giftOn() ? `${T.engrave} · ${T.giftFree}` : `${T.engrave} · ${nim(state.price)} NIM`; };
+  const giftShow = () => {
+    const code = $('#hk').value.trim();
+    $('#hkSt').innerHTML = !code || !gift ? '' : !gift.valid ? `<span class="ok warn">${esc(T.giftBad)}</span>` : state?.name && state.name.length < (gift.minLength || 5) ? `<span class="ok warn">${esc(T.giftShort)}</span>` : `<span class="ok">${CHECK}${esc(T.giftOk(gift.left))}</span>`;
+    goLabel();
+    if (state?.free) recipe(state.name, state.price, giftOn() ? $('#hk').value.trim() : null);
+  };
+  $('#hk').oninput = () => {
+    const v = $('#hk').value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (v !== $('#hk').value) $('#hk').value = v;
+    gift = null; giftShow(); clearTimeout(gdeb);
+    if (v.length < 4) return;
+    gdeb = setTimeout(async () => { const my = ++gseq; const g = await api('/api/gift/' + v).catch(() => null); if (my === gseq) { gift = g; giftShow(); } }, 300);
+  };
+  const nmInput = $('#nm').oninput;
+  $('#nm').oninput = () => { nmInput(); setTimeout(giftShow, 350); };
   $('#go').onclick = async () => {
     const name = state?.name; if (!name || !state.free) return;
     const b = $('#go'); b.disabled = true; b.textContent = T.sending;
-    try { await wallet.send(reg.registry, state.price, 'nim:' + name); }
-    catch (e) { walletError(e); b.disabled = false; b.textContent = `${T.engrave} · ${nim(state.price)} NIM`; return; }
+    const code = giftOn() ? $('#hk').value.trim() : null;
+    try { await wallet.send(reg.registry, code ? 1 : state.price, code ? `nim:${name}:${code}` : 'nim:' + name); }
+    catch (e) { walletError(e); b.disabled = false; goLabel(); return; }
     b.textContent = T.engraving;
     const until = Date.now() + 120000;
     every(3000, async () => {

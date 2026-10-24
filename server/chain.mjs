@@ -11,12 +11,15 @@ export async function createChain({ network = 'MainAlbatross', log = console.log
   async function history(address, since = 0) {
     const all = [];
     let startAt = null;
-    for (let page = 0; page < 200; page++) {
+    // A partial history could let "first registration wins" pick the wrong owner: fail loudly instead of cutting off silently.
+    let full = false;
+    for (let page = 0; page < 20000; page++) {
       const batch = await client.getTransactionsByAddress(address, since, [], startAt, 500);
       all.push(...batch);
-      if (batch.length < 500) break;
+      if (batch.length < 500) { full = true; break; }
       startAt = batch[batch.length - 1].transactionHash;
     }
+    if (!full) throw new Error(`history of ${address} exceeds the scan limit; refusing to continue with a partial history`);
     const seen = new Set();
     return all.filter((t) => !seen.has(t.transactionHash) && seen.add(t.transactionHash))
       .sort((a, b) => (a.blockHeight ?? 0) - (b.blockHeight ?? 0));
