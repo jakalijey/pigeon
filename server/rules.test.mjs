@@ -167,6 +167,13 @@ t('personal gift: only the registry can give, reserved still blocked, first wins
   const { names } = buildTable([tx({ note: 'nim:sunset', value: 50e5, blockHeight: 90, transactionHash: 'p0', sender: 'NQ09 ILK' }), GIVE({ note: 'nim:sunset' })], opts);
   assert.equal(names.get('sunset').owner, 'NQ09ILK');
 });
+t('registry names itself through the burn address', () => {
+  const own = GIVE({ recipient: 'NQ07 0000 0000 0000 0000 0000 0000 0000 0000', transactionHash: 'k9', note: 'nim:heylogram' });
+  const { names } = buildTable([own], opts);
+  assert.equal(names.get('heylogram')?.owner, REG.replace(/\s/g, ''));
+  assert.equal(buildTable([{ ...own, sender: 'NQ00 AAAA' }], opts).names.has('heylogram'), false);   // only the registry
+  assert.equal(buildTable([{ ...own, note: undefined, data: { raw: Buffer.from('nim:admin').toString('hex') } }], opts).names.has('admin'), false);   // reserved still blocked
+});
 t('personal gift: payouts without notes change nothing', () => {
   assert.equal(buildTable([GIVE({ note: '' })], opts).names.size, 0);
 });

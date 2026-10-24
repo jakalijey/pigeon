@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 export const NAME_RE = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
+const BURN = 'NQ0700000000000000000000000000000000';   // Address.NULL, where campaigns are announced
 export const RESERVED = new Set(['nim', 'nimiq', 'admin', 'support', 'help', 'official', 'team', 'wallet', 'pay', 'registry', 'root', 'system']);
 
 export function isValidName(name) {
@@ -92,7 +93,9 @@ export function analyze(txs, { registry, prices }) {
       const g = parseGift(t.data?.raw);
       if (g) { campaigns.set(g.hash, { count: g.count, left: g.count, until: g.until, height: t.blockHeight ?? 0 }); continue; }
       const given = parseNote(t.data?.raw);  // personal gift from the registry: the recipient owns the name
-      if (given && !RESERVED.has(given) && isAddress(t.recipient)) add(t, given, compact(t.recipient), { gift: true, personal: true });
+      // to the burn address the registry names itself (it cannot pay itself); to any other address it is a gift
+      if (given && !RESERVED.has(given) && compact(t.recipient) === BURN) add(t, given, reg, { gift: true, own: true });
+      else if (given && !RESERVED.has(given) && isAddress(t.recipient)) add(t, given, compact(t.recipient), { gift: true, personal: true });
       continue;
     }
     if (compact(t.recipient) !== reg) continue;

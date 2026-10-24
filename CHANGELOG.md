@@ -16,6 +16,7 @@ Video: <https://youtu.be/vo6qgR4q9zA>
 - **SDK and a guide for coding agents.** [`sdk/`](sdk/README.md) (`nim.js`, `hive-db.js`) and [AGENTS.md](AGENTS.md).
 - **Sub-names and gifts.** `lale.garura.nim` given by the owner or claimed by players when the owner opens them; gift codes for free names.
 - **Roadmap.** The November item "pay at the shop" arrived early.
+- **The registry can name itself.** It cannot pay itself, so it sends 1 luna with `nim:<name>` to the burn address, the same way gift campaigns are announced. Only the registry can do this; reserved words stay blocked. The registry is now `heylogram.nim`.
 
 ## 18 October 2026: Rings and accounts
 
