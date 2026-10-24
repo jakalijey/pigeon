@@ -114,6 +114,8 @@ A name is more useful when something lives at it. [Hive](https://hive.heylogram.
 - **Sell, tip and get paid at the counter.** Products are listed in signed settings and paid wallet to wallet; Hive marks an order paid when it sees the payment on chain. The QR till makes a one-time `nimiq:` code for a sale. Nimiq Pay drops the note of a scanned code, so each open sale gets a unique amount (12 NIM becomes 12.00387) and is matched by that exact amount on chain. Money never passes through Hive.
 - **Sub-names live in the cell.** `lale.garura.nim` shows inside garura's cell, and a player who has both an own name and a sub-name picks which one an app shows.
 
+- **On a computer too.** Sign in with the Heylogram Wallet browser extension, which signs Nimiq messages and payments, or use the Webboos browser: type `garura.nim` in its address bar and the cell's site opens, with the wallet built in.
+
 The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents can read the full API in [AGENTS.md](AGENTS.md). A test game that uses every feature runs at <https://signal.heylogram.tv/kovanapi/s/garura/>.
 
 ## Roadmap
