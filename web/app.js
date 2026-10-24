@@ -30,6 +30,7 @@ const TEXTS = {
     ringT: 'Get your pigeon a ring', free: 'This ring is free', taken: (a) => `Taken by ${a}`, reserved: 'Reserved', invalid: 'Letters, digits and single dashes only',
     price: 'Engraving', forever: 'Duration', foreverV: 'Forever', how: 'How', howV: 'Note', rule: 'Rule', ruleV: 'First on chain wins',
     ringHint: 'With a ring your friends find you by name, and your pigeon always lands at the right window.',
+    hiveT: (n) => `${n}.nim has a cell in Hive`, hiveS: 'Your site and domain, a shop, a QR till for your counter, tips.',
     subOpenOn: 'Players can take their own sub-ring: ON', subOpenOff: 'Players can take their own sub-ring: OFF', subOpenHint: 'When on, your app can let each player take name.yours.nim for their own wallet. First come, first served. You can turn it off any time.', subOpenSent: 'Sent; it changes in a few seconds',
     subQ: (p) => `Give sub-rings under ${p}.nim`, subPh: 'name', subTo: 'Address or name.nim (empty = you)', subGive: (n) => `Give ${n}`, subLong: 'Too long: name + your name must be 22 letters or less', subTaken: 'Already taken', subBadTo: 'Address or name not found', subDone: (n) => `${n} is on its way`, subList: 'Given sub-rings', subNone: 'None yet',
     giftQ: 'Have a gift code?', giftPh: 'GIFT CODE', giftOk: (n) => `Gift code works: free (${n} left)`, giftBad: 'This code is not valid or has run out', giftShort: 'Gift codes work for names with 5 or more letters', giftFree: 'free',
@@ -58,6 +59,7 @@ const TEXTS = {
     ringT: 'Güvercinine halka taktır', free: 'Bu halka boşta', taken: (a) => `${a} takıyor`, reserved: 'Ayrılmış', invalid: 'Yalnız harf, rakam ve tek tire',
     price: 'Kazıma ücreti', forever: 'Süre', foreverV: 'Süresiz', how: 'Nasıl', howV: 'Nota', rule: 'Kural', ruleV: 'Zincirde ilk yazan alır',
     ringHint: 'Halka takılınca arkadaşların seni isminle bulur; güvercinin hep doğru pencereye konar.',
+    hiveT: (n) => `${n}.nim için Hive'da peteğin var`, hiveS: 'Siten ve alan adın, dükkânın, tezgâh için QR kasa, bahşiş.',
     subOpenOn: 'Oyuncular kendi alt halkasını alabilir: AÇIK', subOpenOff: 'Oyuncular kendi alt halkasını alabilir: KAPALI', subOpenHint: 'Açıkken uygulaman her oyuncuya isim.senin.nim halkasını kendi cüzdanına aldırabilir. İlk alan kazanır. İstediğin zaman kapatırsın.', subOpenSent: 'Gönderildi; birkaç saniyede değişir',
     subQ: (p) => `${p}.nim altında halka ver`, subPh: 'isim', subTo: 'Adres ya da isim.nim (boş = sen)', subGive: (n) => `${n} ver`, subLong: 'Çok uzun: isim + senin ismin en çok 22 harf olmalı', subTaken: 'Bu alt halka alınmış', subBadTo: 'Adres ya da isim bulunamadı', subDone: (n) => `${n} yolda`, subList: 'Verdiğin alt halkalar', subNone: 'Henüz yok',
     giftQ: 'Hediye kodun var mı?', giftPh: 'HEDİYE KODU', giftOk: (n) => `Hediye kodu geçerli: bedava (${n} hak kaldı)`, giftBad: 'Bu kod geçerli değil ya da hakkı bitti', giftShort: 'Hediye kodu 5 ve daha uzun isimlerde geçer', giftFree: 'bedava',
@@ -98,6 +100,7 @@ if (window.nimiq || window.nimiqPay || window.ReactNativeWebView) markPay();
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const API = LOCAL ? '' : 'https://signal.heylogram.tv/pigeonapi';
 const SITE = 'https://pigeon.heylogram.com';
+const HIVE_SITE = 'https://hive.heylogram.com';   // every name gets a cell there: site, shop, QR till
 const IN_FRAME = (() => { try { return window.parent !== window; } catch { return true; } })();
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -294,6 +297,7 @@ ROUTES.home = async () => {
   const body = me.address ? `<div class="coop"><div class="me">${idn(me.address, 46)}<div style="min-width:0"><b class="name">${nameHtml}</b><small>${esc(short(me.address))}</small></div></div>
 <div class="balance"><b>${me.balance == null ? '…' : nim(me.balance, 2)}</b><span>NIM</span></div>
 <div class="stamps"><button class="stamp hot" data-go="send">${ICON('<path d="M5 12h12M12 6l6 6-6 6"/>')}${esc(T.send)}</button><button class="stamp" data-go="request">${ICON('<path d="M19 12H7M12 6l-6 6 6 6"/>')}${esc(T.request)}</button><button class="stamp" data-go="split">${ICON('<circle cx="12" cy="12" r="8"/><path d="M12 4v16M12 12l6 5"/>')}${esc(T.split)}</button><button class="stamp" data-go="name">${ICON('<ellipse cx="12" cy="12" rx="8" ry="4.5"/><ellipse cx="12" cy="12" rx="4" ry="2"/>')}${esc(T.ring)}</button></div>
+${me.name && !me.name.includes('.') ? `<a class="hivecard" href="${HIVE_SITE}/#n=${encodeURIComponent(me.name)}" target="_blank" rel="noopener"><span class="hx"></span><span><b>${esc(T.hiveT(me.name))}</b><small>${esc(T.hiveS)}</small></span><span class="ar">${ICON('<path d="M9 6l6 6-6 6"/>')}</span></a>` : ''}
 <div class="letters" id="letters"><p class="hint">${esc(T.letters)}…</p></div></div>`
     : connectCard();
   screen(`<div class="brand">${logo()}${esc(T.app)}</div><div class="wire"><svg class="w" viewBox="0 0 410 60" preserveAspectRatio="none"><path d="M0 18 Q205 52 410 18" fill="none" stroke="var(--wire)" stroke-width="2"/></svg>${perches}</div>${body}`);

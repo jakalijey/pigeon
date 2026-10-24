@@ -14,6 +14,7 @@ Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the ri
 - **Get a ring.** Register your own `.nim` name, on chain, with one payment.
 - **Sub-rings.** The owner of `pigeon.nim` can give `cafe.pigeon.nim` to any address, or open sub-names so that players claim their own.
 - **SDK for other apps.** Any website, game or Nimiq Pay mini app can resolve names, show them, log users in and pay by name. See [`sdk/`](sdk/README.md).
+- **A home for every name.** Every `.nim` name gets a cell in [Hive](https://hive.heylogram.com): a site with its own domain, a database, a shop and a QR till for the counter. Pigeon's home screen opens your cell. See [Hive](#hive-a-home-for-every-name).
 - **Fake link warning.** If a request claims to come from `mert.nim` but the money would go to another address, the app blocks the payment and shows both pigeons side by side.
 
 Everything happens with real NIM on Nimiq mainnet, through the Nimiq Pay wallet. The app never holds keys or funds.
@@ -104,12 +105,22 @@ Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nim
 
 Amounts are in luna (1 NIM = 100,000 luna).
 
+## Hive: a home for every name
+
+A name is more useful when something lives at it. [Hive](https://hive.heylogram.com) shows every name from this registry as a cell in a hive, and the owner signs in with the same wallet:
+
+- **Site and domain.** Upload a built site as a `.zip`, or link a site on your own server. Connect a domain you bought; the certificate comes by itself.
+- **Database with server-side rules.** Every name has its own document database. Players sign in by signature and write only their own document; field rules (type, min, max, length, "only goes up", "locked", time limits) are checked on the server.
+- **Sell, tip and get paid at the counter.** Products are listed in signed settings and paid wallet to wallet; Hive marks an order paid when it sees the payment on chain. The QR till makes a one-time `nimiq:` code for a sale. Nimiq Pay drops the note of a scanned code, so each open sale gets a unique amount (12 NIM becomes 12.00387) and is matched by that exact amount on chain. Money never passes through Hive.
+- **Sub-names live in the cell.** `lale.garura.nim` shows inside garura's cell, and a player who has both an own name and a sub-name picks which one an app shows.
+
+The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents can read the full API in [AGENTS.md](AGENTS.md). A test game that uses every feature runs at <https://signal.heylogram.tv/kovanapi/s/garura/>.
+
 ## Roadmap
 
 Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
 
 **November 2026: Pay at the shop**
-- Merchant QR code: a shop prints its own code; customers scan it, see the shop's name and Identicon, and pay.
 - Spanish, next to English and Turkish.
 - Profiles: a display name and a short line on every name.
 
@@ -124,6 +135,7 @@ Pigeon keeps growing after the competition. The first three updates have dates; 
 **Done early (October 2026)**
 - Sub-names such as `cafe.pigeon.nim`, given by the owner of the parent name or claimed by players when the owner opens them.
 - The open library: the [SDK](sdk/README.md) lets any Nimiq app turn `mert.nim` into an address with the same rules, log users in and pay by name.
+- Pay at the shop: the QR till in Hive (tested with a real payment on mainnet), plus shops, tips and a home for every name.
 
 **Long term: the neighbourhood fund**
 People who live together pay into one transparent fund for something they need, a repair, a bridge, a playground. Offers are public, the best value wins, and the money is held in a Nimiq contract and released when the work is done. One name, one voice. No debt, no middlemen, everything on chain.
