@@ -40,6 +40,27 @@ const address = await db.signIn(wallet);     // the user signs a one-time messag
 
 The address is compact (NQ… without spaces). A player session lasts 7 days. Every signed-in address becomes a permanent "bee" of the cell.
 
+### Bees and visits (the counter in the hive)
+
+Every cell shows its bees, and that is how a project is seen in the hive window. Nothing needs to be called for visits:
+
+- Permanent bees: every address that signs in with `db.signIn(wallet)` and every address that holds a sub-name of the cell. Each address counts once and never expires.
+- Today's bees: visitors of the site today. They reset every day (UTC).
+- Total visits: all daily visitors added up since the start.
+
+Where the visits come from:
+
+- A site uploaded to Hive (`.zip`) is counted when its `index.html` is served, once per visitor per day.
+- A site on your own server is counted by the one line Hive gives you when you link it (Site → My own server → "1 · Sign, get the line"). Paste it right before `</body>`:
+
+```html
+<script src="https://signal.heylogram.tv/kovanapi/ari.js" data-isim="yourname" data-imza="…" defer></script>
+```
+
+The same line proves the site is yours and counts one visit per browser per day. Put it on every page that should count; a page without it is not counted. Add `db.signIn` (above) if you also want permanent bees.
+
+Visits are counted by the Hive server, not on chain; permanent bees rest on wallet signatures.
+
 ### HiveDB
 
 ```js
