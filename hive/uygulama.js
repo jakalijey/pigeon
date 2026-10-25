@@ -365,6 +365,9 @@ function icYuz(d) {
       <small class="not">${L('Müşteri QR\'ı Nimiq Pay ile okutur, onaylar. Ödeme zincirde görülünce ekran yeşile döner. Tutarın sonundaki küçük haneler bu satışı tanımak içindir.', 'The customer scans the QR with Nimiq Pay and approves. When the payment shows on chain, the screen turns green. The tiny digits at the end of the amount identify this sale.')}</small></div>
     <div id="odemeAktif" hidden></div>`}
     <h4 class="odemeBas">${L('Son satışlar', 'Recent sales')}</h4><div id="odemeListe"></div>
+    ${p.ornek ? '' : `<h4 class="odemeBas">${L('Tezgâh kartı', 'Counter card')}</h4>
+    <small class="not">${L('İsmin, resmin ve adresinin QR\'ı tek kâğıtta. Tezgâha koy; müşteri tutarı kendisi yazar.', 'Your name, your picture and a QR of your address on one sheet. Put it on the counter; the customer types the amount.')}</small>
+    <div class="iki"><button class="a-btn ikinci" data-is="kartYazdir">${L('Kartı yazdır', 'Print the card')}</button></div>`}
   </div>`;
   const kAyar = (s) => `<div class="a-kart ${s} a-gel"><h3>${L('Ayarlar · imzalı', 'Settings · signed')}<span class="sag">#${d.ayar.surum || 0}</span></h3>
     <div class="kv" id="kv"><div class="kvB"><span>${L('Anahtar', 'Key')}</span><span>${L('Değer', 'Value')}</span><span>${L('Tür', 'Type')}</span><span></span></div>
@@ -784,6 +787,21 @@ async function islem(ne, el) {
     const s = odemeAktif?.s; if (!s) return;
     await api(`/api/kasa/${p.isim}/${s.id}`, { method: 'DELETE' }).catch(() => null);
     odemeAktif = null; clearInterval(odemeZaman); return odaCiz(false);
+  }
+  if (ne === 'kartYazdir') {
+    // printable "pay me by name" sheet: only this sheet is printed (body.yazdir in index.html)
+    const p = secili.p, q = qrcode(0, 'M'); q.addData('nimiq:' + p.adres.replace(/\s/g, '')); q.make();
+    const k = document.createElement('div'); k.id = 'yaziKart';
+    k.innerHTML = `<div class="yk-kagit"><div class="yk-idn">${idSvg.get(p.adres) || ''}</div>
+      <div class="yk-ad">${esc(p.isim)}<em>.nim</em></div><div class="yk-alt">${L('Bana isimle öde', 'Pay me by name')}</div>
+      <div class="yk-qr">${q.createSvgTag({ cellSize: 6, margin: 2, scalable: true })}</div>
+      <div class="yk-not">${L('Nimiq Pay ile okut, tutarı yaz, onayla.', 'Scan with Nimiq Pay, type the amount, approve.')}</div>
+      <div class="yk-adres">${esc(p.adres)}</div><div class="yk-site">hive.heylogram.com</div></div>
+      <div class="yk-dug"><button class="a-btn ana" id="ykYaz">${L('Yazdır', 'Print')}</button><button class="a-btn ikinci" id="ykKapa">${L('Kapat', 'Close')}</button></div>`;
+    document.body.append(k); document.body.classList.add('yazdir');
+    const kapa = () => { k.remove(); document.body.classList.remove('yazdir'); };
+    $('ykKapa').onclick = kapa; $('ykYaz').onclick = () => { try { window.print(); } catch {} };
+    return;
   }
   if (ne === 'odemeYeni') { odemeAktif = null; clearInterval(odemeZaman); await odaCiz(false); $('odemeTutar')?.focus(); return; }
   if (ne === 'alanEkle') {

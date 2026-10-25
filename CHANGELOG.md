@@ -7,6 +7,10 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 - **Gift code HIVE80.** The first 80 builders get a free `.nim` name with 5 or more letters: type the name in Pigeon, enter `HIVE80`, sign a 1 luna transaction. One per wallet, until 11 November 2026. The campaign is announced on chain by the registry.
 - **Hive on phones.** The owner tabs moved from the bottom to the top of the screen. In Nimiq Pay the Mini App window reaches behind Android's navigation bar and reports no bottom inset, so a bottom bar sat under the system buttons. The selected tab stays in view.
 - **Hive's code is open.** The Hive server, the owner panel and its tests are now in [`hive/`](hive/README.md) under the same MIT licence.
+- **Pay button for any website.** `<nim-pay to="mando" amount="5">` in the SDK shows the name and amount and pays by name on click (see [sdk/README.md](sdk/README.md)).
+- **Recent people.** The send screen shows the names you paid and who paid you; tap one to pay again. Kept inside Nimiq Pay too.
+- **Look-alike warning.** When a name looks like another registered name (`rnando` and `mando`), both Identicons show side by side before you pay.
+- **Counter card in Hive.** Get paid → Print the card: your name, your Identicon and a QR of your address on one sheet.
 - **Public usage numbers.** `GET /api/stats` shows names, owners, requests, paid requests, splits and distinct payers.
 - **README.** Two pictures at the top: one name, one home; every home, one window. README now opens with what Pigeon adds to Nimiq, what it costs and why it pays in NIM.
 

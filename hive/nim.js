@@ -19,6 +19,10 @@
 //     nim.badge(el, addr, { format: (l) => l.own, className: 'my-badge' });   // fit the badge to your own UI
 //   </script>
 //
+//   A pay button with no code of your own (loading this file registers it):
+//   <script type="module" src="https://signal.heylogram.tv/kovanapi/nim.js"></script>
+//   <nim-pay to="mando" amount="5" note="coffee"></nim-pay>
+//
 // Names come from the Pigeon registry on the Nimiq chain. Signing and paying always happen in the user's own
 // wallet (Nimiq Pay, or a wallet that provides window.nimiq); this script never sees a key.
 
@@ -225,4 +229,73 @@ export function NimNames({ app = null, pigeon = PIGEON, hive = HIVE, cacheMs = 6
     wallet,
   };
   return nim;
+}
+
+// <nim-pay to="mando" amount="5" note="coffee" label="Tip"></nim-pay>: a pay button for any page.
+// It looks the name up first and pays only when the user clicks it, through the same pay() as above.
+// States (also on the element as state="…"): resolving, ready, paying, paid, error.
+// Events: 'nim-pay:paid' { hash, to, amount } and 'nim-pay:error' { code, message, to, amount }.
+const PAY_STYLE = `:host{display:inline-block;font:600 14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:inherit}
+button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:10px;min-height:40px;padding:8px 14px;border-radius:999px;border:1px solid rgba(127,127,127,.35);background:rgba(127,127,127,.08);cursor:pointer;max-width:100%}
+button:hover:not(:disabled){background:rgba(127,127,127,.16)}button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+button:disabled{cursor:default;opacity:.6}
+.who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.who small{opacity:.6;font-weight:500}
+.amt{white-space:nowrap;opacity:.8}.amt:empty{display:none}.act{white-space:nowrap;padding-left:10px;border-left:1px solid rgba(127,127,127,.35)}
+:host([state=paid]) .act{color:#16A34A}:host([state=error]) .act{color:#DC2626}`;
+
+if (typeof customElements !== 'undefined' && typeof HTMLElement !== 'undefined' && !customElements.get('nim-pay')) {
+  let shared = null;
+  const sdk = () => (shared ||= NimNames());
+  class NimPay extends HTMLElement {
+    static get observedAttributes() { return ['to', 'amount', 'note', 'label']; }
+    constructor() {
+      super();
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>${PAY_STYLE}</style><button part="button" type="button" disabled><span class="who"></span><span class="amt"></span><span class="act"></span></button>`;
+      this.btn = root.querySelector('button');
+      this.btn.addEventListener('click', () => this.pay());
+      this.seq = 0; this.recipient = null;
+    }
+    connectedCallback() { this.lookup(); }
+    attributeChangedCallback(attr) { if (!this.isConnected) return; if (attr === 'label') this.show(this.state, this.text); else if (this.state !== 'paying') this.lookup(); }
+    get amount() { const v = Number(this.getAttribute('amount')); return Number.isFinite(v) && v > 0 ? v : null; }
+    show(state, text) {
+      this.state = state; this.text = text; this.setAttribute('state', state);
+      const n = this.recipient && sdk().label(this.recipient.name);
+      const who = this.btn.querySelector('.who');
+      who.textContent = n ? (n.parent ? n.own : n.full) : clean(this.getAttribute('to')) || '…';
+      if (n?.parent) { const s = document.createElement('small'); s.textContent = '.' + n.parent; who.appendChild(s); }
+      this.btn.querySelector('.amt').textContent = this.amount ? this.amount.toLocaleString('en-US', { maximumFractionDigits: 5 }) + ' NIM' : '';
+      this.btn.querySelector('.act').textContent = state === 'ready' ? (this.getAttribute('label') || 'Pay') : text;
+      this.btn.disabled = !(state === 'ready' || (state === 'error' && this.recipient && this.amount));
+      this.btn.title = this.recipient ? this.recipient.name + '.nim · ' + this.recipient.address : '';
+    }
+    async lookup() {
+      const my = ++this.seq; this.recipient = null;
+      this.show('resolving', 'Looking up…');
+      const r = await sdk().resolve(this.getAttribute('to')).catch(() => undefined);
+      if (my !== this.seq) return;
+      if (r === undefined) return this.show('error', 'network error');
+      if (!r) return this.show('error', 'name not found');
+      this.recipient = r;
+      this.amount ? this.show('ready') : this.show('error', 'no amount');
+    }
+    // only a real click by the user reaches here; the wallet then asks the user to confirm
+    async pay() {
+      if (!this.recipient || !this.amount || this.state === 'paying' || this.state === 'paid') return;
+      const to = this.recipient.name, amount = this.amount;
+      this.show('paying', 'Confirm in wallet…');
+      try {
+        const r = await sdk().pay(to, amount, this.getAttribute('note') || '');
+        const hash = typeof r === 'string' ? r : r?.hash || r?.transactionHash || null;
+        this.show('paid', 'Paid');
+        this.dispatchEvent(new CustomEvent('nim-pay:paid', { bubbles: true, composed: true, detail: { hash, to, amount } }));
+      } catch (e) {
+        const code = e?.code || null, message = String(e?.message || e);
+        this.show('error', code === 'no_wallet' ? 'open in Nimiq Pay' : code === 'unknown_name' ? 'name not found' : /reject|denied|cancel|closed/i.test(message) ? 'cancelled' : 'payment failed');
+        this.dispatchEvent(new CustomEvent('nim-pay:error', { bubbles: true, composed: true, detail: { code, message, to, amount } }));
+      }
+    }
+  }
+  customElements.define('nim-pay', NimPay);
 }

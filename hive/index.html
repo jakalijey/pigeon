@@ -300,6 +300,16 @@
   #oda .a-kapi .link { margin-top: 10px; font: 12.5px ui-monospace, Consolas, monospace; word-break: break-all; color: var(--vurgu-yazi); }
   #oda .a-kapi .a-btn { margin-top: 12px; min-height: 44px; font-size: 14.5px; }
   #oda .a-knot { grid-column: 1 / -1; color: #FFF6E6; opacity: .8; font-size: 13px; }
+  /* ---- counter card (Get paid → Print the card) */
+  #yaziKart { position: fixed; inset: 0; z-index: 200; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 16px; background: rgba(43,22,8,.55); backdrop-filter: blur(6px); }
+  #yaziKart .yk-kagit { width: min(420px, 100%); background: #fff; color: #2B1608; border-radius: 22px; padding: 28px 24px; text-align: center; box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); }
+  #yaziKart .yk-idn { width: 96px; height: 96px; margin: 0 auto 10px; } #yaziKart .yk-idn svg { width: 100%; height: 100%; }
+  #yaziKart .yk-ad { font: 900 clamp(30px, 8vw, 44px)/1.05 system-ui; word-break: break-all; } #yaziKart .yk-ad em { font-style: normal; color: #D97706; }
+  #yaziKart .yk-alt { margin: 6px 0 14px; font: 800 15px system-ui; letter-spacing: .14em; text-transform: uppercase; color: #B45309; }
+  #yaziKart .yk-qr { width: min(280px, 80%); margin: 0 auto; } #yaziKart .yk-qr svg { width: 100%; height: auto; display: block; }
+  #yaziKart .yk-not { margin-top: 12px; font: 600 15px system-ui; } #yaziKart .yk-adres { margin-top: 8px; font: 12px ui-monospace, Consolas, monospace; color: #6B4A2A; word-break: break-all; } #yaziKart .yk-site { margin-top: 6px; font: 700 12px system-ui; color: #B45309; }
+  #yaziKart .yk-dug { display: flex; gap: 10px; }
+  @media print { body.yazdir > *:not(#yaziKart) { display: none !important; } body.yazdir #yaziKart { position: static; background: none; backdrop-filter: none; padding: 0; } body.yazdir .yk-dug { display: none; } body.yazdir .yk-kagit { box-shadow: none; } }
   /* ---- PHONE */
   @media (max-width: 900px) {
     #oda .a-vitrin { grid-template-columns: 1fr; min-height: 0; margin-top: 18px; gap: 34px; }

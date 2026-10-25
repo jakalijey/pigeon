@@ -62,6 +62,12 @@ button,input{font:inherit;color:inherit}
 .envelope input.who{display:block;width:calc(100% - 76px);border:0;background:none;outline:0;font:800 24px var(--font);margin-top:2px;padding:0}
 .envelope input.who.long{font:700 15px var(--mono);padding:6px 0}
 .envelope .addr{font:12px var(--mono);color:var(--muted);min-height:16px;margin-bottom:8px}
+.alike{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--orange) 14%,var(--paper));color:var(--orangeD)}.alike[hidden]{display:none}
+.alike .two2{display:flex;gap:16px;flex-wrap:wrap}.alike .two2 span{display:inline-flex;align-items:center;gap:6px;min-width:0;color:var(--ink)}.alike .two2 .idn{width:30px;height:30px}.alike b{font-size:14px;word-break:break-all}.alike small{font-size:12.5px;font-weight:700}
+.recent small{display:block;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin:0 0 6px 2px}
+.recent>div{display:flex;flex-wrap:wrap;gap:8px}
+.recent button{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 12px 4px 4px;border-radius:999px;border:0;background:var(--paper);font-weight:700;font-size:13px;cursor:pointer}
+.recent button .idn{width:22px;height:22px}.recent button span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheet{position:relative;border-radius:6px;background:var(--paper);padding:16px 18px 18px;background-image:repeating-linear-gradient(180deg,transparent 0 33px,var(--line) 33px 34px);box-shadow:0 12px 26px -18px rgba(31,35,72,.6)}
 .amount{display:flex;align-items:baseline;gap:8px;justify-content:center;padding:4px 0 6px}
 .amount input{width:auto;field-sizing:content;min-width:1.2ch;max-width:78%;text-align:center;border:0;background:none;outline:0;font:800 64px/1 var(--font);padding:0}

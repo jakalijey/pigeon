@@ -16,6 +16,7 @@ const TEXTS = {
     openInPay: 'Open this app in Nimiq Pay to send and receive.', retry: 'Try again', flyHome: 'Pigeon flies inside the Nimiq Pay wallet.', scanQr: 'Scan with your phone and Pigeon opens in Nimiq Pay.', openPay: 'Open in Nimiq Pay', noPay: 'No Nimiq Pay yet?', connecting: 'Reaching the Nimiq network…', walletWait: 'Connecting to Nimiq Pay…',
     write: 'Write a letter', to: 'TO', toHint: 'name.nim or NQ address', ringOk: 'Ring matches', plain: 'Plain address, no ring', noName: 'Nobody wears this ring', moved: 'Wallet vault address: sending to its owner’s wallet',
     stampHint: 'The picture on the stamp belongs to this address. Check it matches the one on your friend’s screen.',
+    recent: 'Recent', alike: (n) => `Looks like ${n}.nim — check the picture`,
     notePh: 'Add a note', noteHint: 'The note is written on chain. Anyone can read it.', seal: 'Seal and fly', sending: 'Waiting for your wallet…',
     delivered: 'DELIVERED · NIMIQ POST · ', note: 'Note', fee: 'Fee', tx: 'Transaction', share: 'Share', done: 'Done',
     tie: 'Tie a note to its leg', amount: 'AMOUNT', what: 'WHAT FOR', create: 'Tie the note',
@@ -45,6 +46,7 @@ const TEXTS = {
     openInPay: 'Gönderip almak için bu uygulamayı Nimiq Pay içinde aç.', retry: 'Tekrar dene', flyHome: 'Güvercin, Nimiq Pay cüzdanının içinde uçar.', scanQr: 'Telefonunla okut, Güvercin Nimiq Pay’de açılsın.', openPay: 'Nimiq Pay’de aç', noPay: 'Nimiq Pay yok mu?', connecting: 'Nimiq ağına bağlanılıyor…', walletWait: 'Nimiq Pay’e bağlanılıyor…',
     write: 'Mektup yaz', to: 'KİME', toHint: 'isim.nim ya da NQ adresi', ringOk: 'Halkası tutuyor', plain: 'Düz adres, halkası yok', noName: 'Bu halkayı takan yok', moved: 'Cüzdan kasası adresi: sahibinin cüzdanına gidecek',
     stampHint: 'Puldaki resim bu adrese özel. Arkadaşının ekranındakiyle aynı mı, bir bak.',
+    recent: 'Son kişiler', alike: (n) => `${n}.nim ile çok benziyor — resme bir bak`,
     notePh: 'Bir not ekle', noteHint: 'Not zincire yazılır, herkes görebilir.', seal: 'Mühürle ve uçur', sending: 'Cüzdanın onayı bekleniyor…',
     delivered: 'ULAŞTI · NIMIQ POSTASI · ', note: 'Not', fee: 'Ücret', tx: 'İşlem', share: 'Paylaş', done: 'Tamam',
     tie: 'Ayağına not bağla', amount: 'TUTAR', what: 'NE İÇİN', create: 'Notu bağla',
@@ -210,16 +212,50 @@ const wallet = {
 };
 const walletError = (e) => toast(/reject|denied|cancel|closed/i.test(String(e?.message || e?.code || e)) ? T.rejected : e?.code === 'no_wallet' ? T.openInPay : T.failed);
 
+// Inside the Nimiq Pay frame browser storage throws; the page around the frame keeps our keys ('hl-depo' bridge, hlsite: keys)
+const depo = new Map();
+const depoReady = !IN_FRAME ? Promise.resolve() : new Promise((done) => {
+  const ask = () => window.parent.postMessage({ tur: 'hl-depo', islem: 'hepsi' }, '*');
+  const on = (e) => {
+    const v = e.data;
+    if (e.source !== window.parent || v?.tur !== 'hl-depo' || v.islem !== 'hepsi') return;
+    removeEventListener('message', on); clearInterval(again); clearTimeout(stop);
+    for (const [k, s] of Object.entries(v.veri || {})) if (k.startsWith('pg_') && !depo.has(k)) depo.set(k, String(s));
+    done();
+  };
+  addEventListener('message', on);
+  const again = setInterval(ask, 500);
+  const stop = setTimeout(() => { removeEventListener('message', on); clearInterval(again); done(); }, 3000);
+  ask();
+});
 const store = {
-  get(k, d) { try { return JSON.parse(localStorage.getItem('pg_' + k)) ?? d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem('pg_' + k, JSON.stringify(v)); } catch {} },
+  get(k, d) { try { return JSON.parse(depo.get('pg_' + k) ?? localStorage.getItem('pg_' + k)) ?? d; } catch { return d; } },
+  set(k, v) {
+    const s = JSON.stringify(v); depo.set('pg_' + k, s);
+    try { localStorage.setItem('pg_' + k, s); } catch {}
+    if (IN_FRAME) window.parent.postMessage({ tur: 'hl-depo', islem: 'yaz', anahtar: 'pg_' + k, deger: s }, '*');
+  },
 };
 function remember(address, name) {
   if (!isAddr(address) || isMine(address)) return;
   const list = store.get('contacts', []).filter((c) => c.address !== compact(address));
   list.unshift({ address: compact(address), name: name || null });
   store.set('contacts', list.slice(0, 12));
+  addRecent([{ address, name, t: Date.now() }]);
 }
+// Recent people: whom you paid and who paid you, newest first. Only address, name and time are kept.
+function addRecent(items) {
+  const list = recentPeople(20);
+  let changed = false;
+  for (const { address, name, t } of items) {
+    if (!isAddr(address) || isMine(address)) continue;
+    const a = compact(address), old = list.find((c) => c.address === a);
+    if (!old) { list.push({ address: a, name: name || null, t: t || 0 }); changed = true; }
+    else if ((t || 0) > old.t || (name && name !== old.name)) { old.t = Math.max(old.t, t || 0); old.name = name || old.name; changed = true; }
+  }
+  if (changed) store.set('recent', list.sort((x, y) => y.t - x.t).slice(0, 20));
+}
+const recentPeople = (max = 6) => store.get('recent', []).filter((c) => c && isAddr(c.address) && !isMine(c.address)).sort((x, y) => (Number(y.t) || 0) - (Number(x.t) || 0)).map((c) => ({ address: compact(c.address), name: typeof c.name === 'string' && /^[a-z0-9.-]{1,64}$/.test(c.name) ? c.name : null, t: Number(c.t) || 0 })).slice(0, max);
 
 const me = { address: null, all: [], name: null, balance: null };
 const isMine = (a) => me.all.includes(compact(a));
@@ -308,6 +344,7 @@ ${me.name && !me.name.includes('.') ? `<a class="hivecard" href="${HIVE_SITE}/#n
   const refresh = async () => {
     const [b, inc] = await Promise.all([myBalance(), myIncoming()]);
     if (b != null) { me.balance = b; const el = $('.balance b'); if (el) el.textContent = nim(b, 2); }
+    if (inc) addRecent(inc.map((t) => ({ address: t.from, name: t.fromName, t: t.time })));
     const box = $('#letters'); if (!box || !inc) return;
     const list = inc.slice(-6).reverse();
     const fresh = seenIncoming ? inc.filter((t) => !seenIncoming.has(t.hash)) : [];
@@ -333,10 +370,36 @@ async function resolveWho(raw) {
   return r.address ? { address: compact(r.address), name } : { missing: true, name };
 }
 
+// Look-alike rings: letters that read the same on a small screen are folded first (rn→m, vv→w, 0→o, 1 and i→l),
+// then any other registered name one letter away is shown next to it. A warning only; payment stays open.
+let allNames = null;
+const namesOnce = () => (allNames ||= api('/api/names').then((xs) => (Array.isArray(xs) ? xs : []).filter((x) => x?.name && isAddr(x.address))).catch(() => { allNames = null; return []; }));
+const fold = (s) => s.replace(/rn/g, 'm').replace(/vv/g, 'w').replace(/0/g, 'o').replace(/[1i]/g, 'l');
+const oneOff = (a, b) => {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (a.length >= b.length) i++;
+    if (b.length >= a.length) j++;
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+};
+async function lookAlike(name, address) {
+  if (!name || name.includes('.') || fold(name).length < 3) return null;
+  const f = fold(name);
+  const others = (await namesOnce()).filter((x) => x.name !== name && compact(x.address) !== compact(address));
+  return others.find((x) => fold(x.name) === f) || others.find((x) => oneOff(fold(x.name), f)) || null;
+}
+
 ROUTES.send = (d) => {
   let who = null, amount = toLuna(d.amount) || 0;
+  const recent = recentPeople();
   screen(`${backBtn(T.write)}
 <div class="envelope"><div class="pst" id="pst"></div><div class="to">${esc(T.to)}</div><input class="who" id="who" placeholder="${esc(T.toHint)}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(d.to || '')}"><div class="addr" id="addr"></div><span id="check"></span></div>
+<div class="alike" id="alike" hidden></div>
+${recent.length ? `<div class="recent"><small>${esc(T.recent)}</small><div>${recent.map((c, i) => `<button data-r="${i}">${idn(c.address, 22)}<span>${esc(c.name ? c.name + '.nim' : short(c.address))}</span></button>`).join('')}</div></div>` : ''}
 <p class="hint">${esc(T.stampHint)}</p>
 <div class="sheet"><div class="amount"><input id="amt" inputmode="decimal" placeholder="0" value="${amount ? esc(nim(amount)) : ''}"><span>NIM</span></div>
 <div class="quick">${[5, 10, 25, 50].map((v) => `<button data-q="${v}">${v}</button>`).join('')}</div>
@@ -354,7 +417,7 @@ ROUTES.send = (d) => {
     deb = setTimeout(async () => {
       const my = ++seq; const v = $('#who').value;
       $('#who').classList.toggle('long', /^NQ/i.test(v.trim()));
-      who = null; upd();
+      who = null; upd(); $('#alike').hidden = true;
       const r = await resolveWho(v);
       if (my !== seq) return;
       who = r;
@@ -362,9 +425,15 @@ ROUTES.send = (d) => {
       $('#addr').textContent = r?.address ? short(r.address) : '';
       $('#check').innerHTML = (r?.moved ? `<span class="ok warn">${esc(T.moved)}</span> ` : '') + (!r ? '' : r.missing ? `<span class="ok warn">${esc(T.noName)}</span>` : r.plain ? `<span class="ok warn">${esc(T.plain)}</span>` : `<span class="ok">${CHECK}${esc(T.ringOk)}</span>`);
       paintIdenticons(app()); upd();
+      const al = $('#alike'); al.innerHTML = '';
+      const other = r?.address && r.name && !isAddr(v) ? await lookAlike(r.name, r.address) : null;
+      if (my !== seq || !other) return;
+      al.innerHTML = `<div class="two2"><span>${idn(r.address, 30)}<b>${esc(r.name)}.nim</b></span><span>${idn(other.address, 30)}<b>${esc(other.name)}.nim</b></span></div><small>${esc(T.alike(other.name))}</small>`;
+      al.hidden = false; paintIdenticons(al);
     }, 300);
   };
   $('#who').oninput = look; $('#amt').oninput = upd;
+  app().querySelectorAll('[data-r]').forEach((b) => b.onclick = () => { const c = recent[b.dataset.r]; $('#who').value = c.name ? c.name + '.nim' : pretty(c.address); look(); });
   app().querySelectorAll('[data-q]').forEach((b) => b.onclick = () => { $('#amt').value = b.dataset.q; upd(); });
   $('#note').oninput = (e) => { if (bytes(e.target.value) > 64) { e.target.value = clip(e.target.value); toast(T.tooLong); } };
   if (d.to) look();
@@ -661,8 +730,8 @@ async function start() {
   let loaded = false; loading.then(() => { loaded = true; });
   await new Promise((ok) => setTimeout(ok, 0));
   if (!loaded) app().innerHTML = `<div class="brand">${logo()}${esc(T.app)}</div><div class="wire"><div class="perch" style="left:calc(50% - 46px);top:40px"><div class="g">${perched()}</div></div></div><p class="hint" style="text-align:center">${esc(T.walletWait)}</p>`;
-  await loading;
-  const m = (location.hash.match(/^#(r|s|n)=([0-9a-z-]{1,40})$/) || location.pathname.match(/^\/(r|s|n)\/([0-9a-z-]{1,40})$/));
+  await Promise.all([loading, depoReady]);
+  const m =(location.hash.match(/^#(r|s|n)=([0-9a-z-]{1,40})$/) || location.pathname.match(/^\/(r|s|n)\/([0-9a-z-]{1,40})$/));
   const first = !m ? ['home', {}] : m[1] === 'r' ? ['req', { id: m[2] }] : m[1] === 's' ? ['splitv', { id: m[2] }] : ['send', { to: m[2] + '.nim' }];
   try { history.replaceState({ view: 'home', data: {} }, '', LOCAL ? '/' : undefined); } catch {}
   if (first[0] !== 'home') try { history.pushState({ view: first[0], data: first[1] }, ''); } catch {}

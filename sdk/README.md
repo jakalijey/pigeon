@@ -51,6 +51,33 @@ nim.badge(element, 'NQ44 …');              // writes "mando.nim" into the elem
 
 Options for `NimNames({ … })`: `app`, `pigeon` and `hive` (server URLs), `cacheMs` (default 60 s), `registry` (the registry address; it is fixed in code so no server answer can redirect a payment).
 
+### A pay button: `<nim-pay>`
+
+Loading `nim.js` also registers a `<nim-pay>` element, so a page can take payments with no code of its own:
+
+```html
+<script type="module" src="https://signal.heylogram.tv/kovanapi/nim.js"></script>
+<nim-pay to="mando" amount="5" note="coffee"></nim-pay>
+```
+
+The file is an ES module, so the script tag needs `type="module"`. Importing `NimNames` from it registers the button too.
+
+| Attribute | What it does |
+|---|---|
+| `to` | A `.nim` name or sub-name (`mando`, `mert.sunset`). |
+| `amount` | NIM to send, for example `5` or `2.5`. |
+| `note` | Optional note, cut to 64 bytes. Anyone can read it on chain. |
+| `label` | Button text instead of `Pay`. |
+
+The button looks the name up first and shows it with the amount. It sends only when the user clicks it, through the same path as `pay()`, and the wallet still asks the user to confirm. Its state is on the element as `state="…"`: `resolving`, `ready`, `paying`, `paid` or `error`. A name that is not registered shows `name not found` and stays disabled; after a wallet error the user can click again.
+
+```js
+document.addEventListener('nim-pay:paid', (e) => console.log(e.detail));    // { hash, to, amount }
+document.addEventListener('nim-pay:error', (e) => console.log(e.detail));   // { code, message, to, amount }
+```
+
+The button lives in its own Shadow DOM with a small neutral style. To restyle it, use `nim-pay::part(button)` or `nim-pay[state=paid]` in your own CSS. As with `pay()`, check the payment on chain before you hand anything out.
+
 ### Show names the same way everywhere
 
 A sub-name belongs to someone inside an app. Inside that app, show the user's own part large and the parent small: **mert** <sub>.sunset.nim</sub>. The full name stays in the tooltip. `badge()` does this by default.
