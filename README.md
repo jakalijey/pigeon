@@ -4,6 +4,10 @@ Pay anyone on Nimiq by name. A Nimiq Pay mini app with `.nim` names, payment req
 
 Live: <https://pigeon.heylogram.com> (open it in Nimiq Pay). Hosted on the Heylogram site platform; the server runs at `signal.heylogram.tv/pigeonapi`.
 
+![One name. One home. Hive gives every .nim name a site, a database, a shop and a QR till.](docs/hive-one-name-one-home.png)
+
+![Every home. One window. Hive's honeycomb shows every Nimiq project with its live site and its users.](docs/hive-every-home-one-window.png)
+
 Videos: [first release](https://youtu.be/gAgeB7Ck_w8) · [every name gets a home](https://youtu.be/vo6qgR4q9zA). What changed and when: [CHANGELOG.md](CHANGELOG.md).
 
 Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the right address. Every person shows up with their Nimiq Identicon, so you can see that the pigeon really belongs to them.
