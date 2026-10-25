@@ -4,9 +4,15 @@ Pay anyone on Nimiq by name. A Nimiq Pay mini app with `.nim` names, payment req
 
 Live: <https://pigeon.heylogram.com> (open it in Nimiq Pay). Hosted on the Heylogram site platform; the server runs at `signal.heylogram.tv/pigeonapi`.
 
+Nimiq has no names of its own: an address is 36 characters. Pigeon adds the missing name layer on top of Nimiq (a registry read from chain notes, no smart contract) and an [SDK](sdk/README.md) so any Mini App can resolve names and pay by name.
+
+**Update, October 2026: Hive.** Pigeon's biggest update so far gives every name a home: a site, a database, a shop and a QR till, and a hive where every Nimiq project is on show with its users. Hive's code is in [`hive/`](hive/README.md).
+
 ![One name. One home. Hive gives every .nim name a site, a database, a shop and a QR till.](docs/hive-one-name-one-home.png)
 
 ![Every home. One window. Hive's honeycomb shows every Nimiq project with its live site and its users.](docs/hive-every-home-one-window.png)
+
+Live numbers: <https://signal.heylogram.tv/pigeonapi/api/stats> (names, requests, paid requests, distinct payers).
 
 Videos: [first release](https://youtu.be/gAgeB7Ck_w8) · [every name gets a home](https://youtu.be/vo6qgR4q9zA). What changed and when: [CHANGELOG.md](CHANGELOG.md).
 
@@ -24,6 +30,10 @@ Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the ri
 - **Fake link warning.** If a request claims to come from `mert.nim` but the money would go to another address, the app blocks the payment and shows both pigeons side by side.
 
 Everything happens with real NIM on Nimiq mainnet, through the Nimiq Pay wallet. The app never holds keys or funds.
+
+**Cost.** Using Pigeon is free and takes no fee on payments. Registering a name is a one-time payment (5 or more letters: 50 NIM, 4: 200, 3: 500, 2: 1000), with no yearly rent; the gift code `HIVE80` gives the first 80 builders a free name until 11 November 2026.
+
+**Tokens.** Pigeon pays in NIM, which meets the Cycle III rule ("USDT, NIM, or both"). USDT by name is planned: today a Mini App needs POL for gas to send USDT on Polygon, and USDT payments in Nimiq Pay were under maintenance on 25 October 2026.
 
 ## How `.nim` names work
 
@@ -95,6 +105,7 @@ Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nim
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/api/registry` | registry address, prices, number of names, chain head |
+| GET | `/api/stats` | public usage: names, owners, requests, paid requests, splits, distinct payers, NIM paid |
 | GET | `/api/names` | all registered names, with their sub-name owners |
 | GET | `/api/name/:name` | owner address, or `free` with price, `reserved`, `invalid` |
 | GET | `/api/address/:address` | primary name of an address |
@@ -110,6 +121,8 @@ Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nim
 | GET | `/api/split/:id` | split with every part's status |
 
 Amounts are in luna (1 NIM = 100,000 luna).
+
+The note words come from Turkish: `alt` = sub-name, `altac` / `altkapa` = open / close sub-names, `hediye` = gift, `ode` = pay. They stay as they are because names already registered on chain use them.
 
 ## Hive: a home for every name
 

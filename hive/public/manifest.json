@@ -1,0 +1,16 @@
+{
+  "name": "Hive · The Nimiq name hive",
+  "short_name": "Hive",
+  "description": "Every .nim name is a cell in the hive. Publish your site, sign your settings, count your bees.",
+  "start_url": "https://hive.heylogram.com/",
+  "display": "standalone",
+  "color_scheme": "light dark",
+  "background_color": "#FFF6E6",
+  "theme_color": "#D97706",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

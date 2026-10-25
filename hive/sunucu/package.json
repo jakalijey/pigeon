@@ -1,0 +1,10 @@
+{
+  "name": "hive-kovan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@nimiq/core": "^2.22.0",
+    "@nimiq/identicons": "^1.6.2"
+  }
+}

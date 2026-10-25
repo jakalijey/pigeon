@@ -178,6 +178,20 @@ http.createServer(async (req, res) => {
         return send(res, 200, rows);
       }
 
+      // public usage numbers: names, requests and splits, and the distinct wallets that paid them (payments seen so far)
+      if (p === '/api/stats') {
+        const reqs = Object.values(store.requests);
+        const payers = new Set(reqs.flatMap((r) => r.payments.map((x) => compact(x.from))));
+        const paidOf = (r) => r.payments.reduce((a, x) => a + x.value, 0);
+        const names = registry.list();
+        return send(res, 200, {
+          names: names.length, owners: new Set(names.map((r) => compact(r.address))).size,
+          requests: reqs.length, paidRequests: reqs.filter((r) => paidOf(r) >= r.value).length,
+          splits: Object.keys(store.splits).length, payers: payers.size,
+          paidNim: reqs.reduce((a, r) => a + paidOf(r), 0) / 1e5,
+        });
+      }
+
       if (p === '/api/request' && req.method === 'POST') {
         const b = await body(req);
         const to = compact(b.to), value = luna(b.value);

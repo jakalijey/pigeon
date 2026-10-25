@@ -1,0 +1,25 @@
+# Hive
+
+> Hive hosts apps for .nim names on the Nimiq chain. Every name gets a cell: a static site, a database with server-checked rules, signed settings, sales, tips, a shop till (QR) and its own domain. Money always goes wallet to wallet; Hive never holds funds and takes no fee.
+
+Hive is like Vercel (site + custom domain), Firebase (database + rules, sign-in by wallet signature) and a payment layer (orders, tips, QR till) in one place, built on .nim names from the Pigeon registry. Every cell shows its bees: users who signed in with their wallet, and today's visitors (counted by the one-line `ari.js` tag a linked site carries).
+
+## Docs
+
+- [Agent guide (full API, rules, recipes)](https://signal.heylogram.tv/kovanapi/llms-full.txt): read this before writing code for a Hive app.
+- [User guide and terms](https://hive.heylogram.com/terms): the owner's panel, step by step.
+- [Privacy](https://hive.heylogram.com/privacy)
+
+## SDK
+
+- [HiveDB](https://signal.heylogram.tv/kovanapi/hive-db.js): ES module, `import { HiveDB } from '…/hive-db.js'`.
+- [nim.js](https://signal.heylogram.tv/kovanapi/nim.js): ES module, `import { NimNames } from '…/nim.js'`.
+
+## Example
+
+- [HAHA](https://signal.heylogram.tv/kovanapi/s/garura/): a small game in the garura.nim cell that uses every feature: sign-in, leaderboard with field rules, sub-names, signed settings, a shop, owner prizes and tips.
+
+## Apps
+
+- [Hive](https://hive.heylogram.com): the hive of names and the owner's panel.
+- [Pigeon](https://pigeon.heylogram.com): get a .nim name, pay by name, payment links, bill splitting (a Nimiq Pay mini app).
