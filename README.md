@@ -143,7 +143,7 @@ The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents 
 
 Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
 
-**November 2026: Pay at the shop**
+**November 2026: Faces and languages**
 - Spanish, next to English and Turkish.
 - Profiles: a display name and a short line on every name.
 
@@ -159,6 +159,10 @@ Pigeon keeps growing after the competition. The first three updates have dates; 
 - Sub-names such as `cafe.pigeon.nim`, given by the owner of the parent name or claimed by players when the owner opens them.
 - The open library: the [SDK](sdk/README.md) lets any Nimiq app turn `mert.nim` into an address with the same rules, log users in and pay by name.
 - Pay at the shop: the QR till in Hive (tested with a real payment on mainnet), plus shops, tips and a home for every name.
+- Hive's code is open in [`hive/`](hive/README.md), with a hive window that shows every project with its visitors and users.
+- Free names for builders: gift code `HIVE80`, announced on chain by the registry.
+- Public usage numbers at `/api/stats`.
+- On a computer: Mini Apps run in a desktop browser with the Heylogram Wallet extension, and names with a site open in the Webboos browser.
 
 **Long term: the neighbourhood fund**
 People who live together pay into one transparent fund for something they need, a repair, a bridge, a playground. Offers are public, the best value wins, and the money is held in a Nimiq contract and released when the work is done. One name, one voice. No debt, no middlemen, everything on chain.
