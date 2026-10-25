@@ -31,7 +31,7 @@ const TEXTS = {
     ringT: 'Get your pigeon a ring', free: 'This ring is free', taken: (a) => `Taken by ${a}`, reserved: 'Reserved', invalid: 'Letters, digits and single dashes only',
     price: 'Engraving', forever: 'Duration', foreverV: 'Forever', how: 'How', howV: 'Note', rule: 'Rule', ruleV: 'First on chain wins',
     ringHint: 'With a ring your friends find you by name, and your pigeon always lands at the right window.',
-    hiveT: (n) => `${n}.nim has a cell in Hive`, hiveS: 'Your site and domain, a shop, a QR till for your counter, tips.',
+    hiveT: (n) => `${n}.nim has a cell in Hive`, hiveS: 'Your site and domain, a shop, a QR till for your counter, tips.', siteAddT: 'Now add your site', siteAddS: 'Sign in to your cell in Hive and link your site. It goes in the window and opens by your name.',
     subOpenOn: 'Players can take their own sub-ring: ON', subOpenOff: 'Players can take their own sub-ring: OFF', subOpenHint: 'When on, your app can let each player take name.yours.nim for their own wallet. First come, first served. You can turn it off any time.', subOpenSent: 'Sent; it changes in a few seconds',
     subQ: (p) => `Give sub-rings under ${p}.nim`, subPh: 'name', subTo: 'Address or name.nim (empty = you)', subGive: (n) => `Give ${n}`, subLong: 'Too long: name + your name must be 22 letters or less', subTaken: 'Already taken', subBadTo: 'Address or name not found', subDone: (n) => `${n} is on its way`, subList: 'Given sub-rings', subNone: 'None yet',
     giftQ: 'Have a gift code?', giftPh: 'GIFT CODE', giftOk: (n) => `Gift code works: free (${n} left)`, giftBad: 'This code is not valid or has run out', giftShort: 'Gift codes work for names with 5 or more letters', giftFree: 'free',
@@ -61,7 +61,7 @@ const TEXTS = {
     ringT: 'Güvercinine halka taktır', free: 'Bu halka boşta', taken: (a) => `${a} takıyor`, reserved: 'Ayrılmış', invalid: 'Yalnız harf, rakam ve tek tire',
     price: 'Kazıma ücreti', forever: 'Süre', foreverV: 'Süresiz', how: 'Nasıl', howV: 'Nota', rule: 'Kural', ruleV: 'Zincirde ilk yazan alır',
     ringHint: 'Halka takılınca arkadaşların seni isminle bulur; güvercinin hep doğru pencereye konar.',
-    hiveT: (n) => `${n}.nim için Hive'da peteğin var`, hiveS: 'Siten ve alan adın, dükkânın, tezgâh için QR kasa, bahşiş.',
+    hiveT: (n) => `${n}.nim için Hive'da peteğin var`, hiveS: 'Siten ve alan adın, dükkânın, tezgâh için QR kasa, bahşiş.', siteAddT: 'Şimdi siteni ekle', siteAddS: 'Hive\'da peteğine gir, siteni bağla. Vitrine çıkar, isminle açılır.',
     subOpenOn: 'Oyuncular kendi alt halkasını alabilir: AÇIK', subOpenOff: 'Oyuncular kendi alt halkasını alabilir: KAPALI', subOpenHint: 'Açıkken uygulaman her oyuncuya isim.senin.nim halkasını kendi cüzdanına aldırabilir. İlk alan kazanır. İstediğin zaman kapatırsın.', subOpenSent: 'Gönderildi; birkaç saniyede değişir',
     subQ: (p) => `${p}.nim altında halka ver`, subPh: 'isim', subTo: 'Adres ya da isim.nim (boş = sen)', subGive: (n) => `${n} ver`, subLong: 'Çok uzun: isim + senin ismin en çok 22 harf olmalı', subTaken: 'Bu alt halka alınmış', subBadTo: 'Adres ya da isim bulunamadı', subDone: (n) => `${n} yolda`, subList: 'Verdiğin alt halkalar', subNone: 'Henüz yok',
     giftQ: 'Hediye kodun var mı?', giftPh: 'HEDİYE KODU', giftOk: (n) => `Hediye kodu geçerli: bedava (${n} hak kaldı)`, giftBad: 'Bu kod geçerli değil ya da hakkı bitti', giftShort: 'Hediye kodu 5 ve daha uzun isimlerde geçer', giftFree: 'bedava',
@@ -711,7 +711,8 @@ ${me.name && !me.name.includes('.') ? `<details class="gift sub"><summary>${esc(
         clearInterval(timer);
         if (!me.name) me.name = name;
         $('#st').innerHTML = '';
-        showRing(name, r, true).then(() => { $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>`; });
+        // right after the ring: one tap to the cell, where the site address is all that is needed (quick link in Hive)
+        showRing(name, r, true).then(() => { $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>${name.includes('.') ? '' : `<a class="hivecard" href="${HIVE_SITE}/#n=${encodeURIComponent(name)}" target="_blank" rel="noopener"><span class="hx"></span><span><b>${esc(T.siteAddT)}</b><small>${esc(T.siteAddS)}</small></span><span class="ar">${ICON('<path d="M9 6l6 6-6 6"/>')}</span></a>`}`; });
         b.textContent = T.done; b.disabled = false; b.onclick = () => go('home');
       } else if (r?.address || Date.now() > until) { clearInterval(timer); toast(r?.address ? T.taken(short(r.address)) : T.failed); b.textContent = T.done; b.disabled = false; b.onclick = () => go('home'); }
     });

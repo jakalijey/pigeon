@@ -334,6 +334,43 @@ const sayilan = new Set(); let sayGun = '';
 function ilkZiyaret(req, n) { const g = bugun(); if (g !== sayGun) { sayilan.clear(); sayGun = g; } if (sayilan.size > 300000) return false;
   const ip = String(req.headers['x-real-ip'] || req.socket.remoteAddress || ''), k = n + '|' + ip; if (sayilan.has(k)) return false; sayilan.add(k); return true; }
 // External site to link: https and public addresses only (so our server does not probe its own internal network)
+// The signed line (or hive.json) on the site proves the owner of <n>.nim links it to <url>; the signature is the proof, not who asks
+async function kanitDogrula(n, url) {
+  // Proof file: first /.well-known/hive.json; /hive.json for hosts that do not serve dot folders; heylogram.com code sites serve files under /api/d/<name>/
+  const kod = url.match(/^https:\/\/([a-z0-9-]+)\.heylogram\.com$/);
+  const adaylar = [url + '/.well-known/hive.json', url + '/hive.json', ...(kod ? [url + '/api/d/' + kod[1] + '/hive.json'] : [])];
+  const beklenen = `Hive sitesi: ${n}.nim = ${url}`;
+  // The page itself first: if the bee-counter line carries the signature, one paste is enough (on code sites the page is under /api/d/<name>/)
+  let j = null;
+  for (const a of [url + '/', ...(kod ? [url + '/api/d/' + kod[1], url + '/api/d/' + kod[1] + '/'] : [])]) {   // a code-site page is served without the trailing / (with / it returns 308)
+    const html = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => r.ok ? r.text() : '').catch(() => '');
+    const k = satirKaniti(html.slice(0, 3 * 1024 * 1024), n); if (k) { j = { mesaj: beklenen, ...k }; break; }
+  }
+  if (!j) for (const a of adaylar) { j = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => r.ok ? r.json() : null).catch(() => null); if (j?.mesaj) break; j = null; }
+  if (!j) return { hata: 'kanit_yok', beklenen };
+  const imzalayan = j.mesaj === beklenen ? imzaDogrula(j.mesaj, j.publicKey, j.signature) : null;
+  if (!imzalayan || imzalayan !== kompakt(sahipAdresi(n))) return { hata: 'kanit_gecersiz', beklenen };
+  return { ok: true };
+}
+function siteBagla(n, url) {
+  veri.siteler[n] = { ...(veri.siteler[n] || {}), baslik: veri.siteler[n]?.baslik || n + '.nim', yayin: Date.now(), dis: url }; kirli = true;
+  rmSync(join(SITELER, n), { recursive: true, force: true });
+}
+// Linking without the "Link" button: the first visit to a page that carries the signed line links it (a coding agent can do the
+// whole job once the owner has signed). Only when the cell has no site or another external site, never over an uploaded one;
+// one check per name and origin every 30 minutes, so visits cannot be used to make the server fetch pages again and again.
+const otoDenenen = new Map();
+async function otoBagla(n, koken) {
+  if (!/^https:\/\/[\w.-]+$/.test(koken || '')) return;
+  const s = veri.siteler[n];
+  if (s?.dis === koken || (s && !s.dis)) return;
+  const k = n + '|' + koken, t = Date.now();
+  if (t - (otoDenenen.get(k) || 0) < 30 * 60e3) return;
+  if (otoDenenen.size > 5000) otoDenenen.clear();
+  otoDenenen.set(k, t);
+  if (!(await disAdresGuvenli(koken))) return;
+  if ((await kanitDogrula(n, koken)).ok) siteBagla(n, koken);
+}
 async function disAdresGuvenli(url) {
   let u; try { u = new URL(url); } catch { return false; }
   if (u.protocol !== 'https:' || u.port && u.port !== '443' || !/\.[a-z]{2,}$/i.test(u.hostname) || /^(localhost|.*\.local|.*\.internal)$/i.test(u.hostname)) return false;
@@ -616,22 +653,10 @@ const sunucu = createServer(async (req, res) => {
       const b = JSON.parse(await govdeOku(req, 2000) || '{}'), url = String(b.url || '').replace(/\/+$/, '');
       if (!/^https?:\/\/[\w.-]+(:\d+)?(\/[\w./-]*)?$/.test(url)) return gonder(res, 400, { hata: 'adres_gecersiz' });
       if (!(await disAdresGuvenli(url))) return gonder(res, 400, { hata: 'adres_herkese_acik_https_olmali' });
-      // Proof file: first /.well-known/hive.json; /hive.json for hosts that do not serve dot folders; heylogram.com code sites serve files under /api/d/<name>/
-      const kod = url.match(/^https:\/\/([a-z0-9-]+)\.heylogram\.com$/);
-      const adaylar = [url + '/.well-known/hive.json', url + '/hive.json', ...(kod ? [url + '/api/d/' + kod[1] + '/hive.json'] : [])];
-      const beklenen = `Hive sitesi: ${n}.nim = ${url}`;
-      // The page itself first: if the bee-counter line carries the signature, one paste is enough (on code sites the page is under /api/d/<name>/)
-      let j = null;
-      for (const a of [url + '/', ...(kod ? [url + '/api/d/' + kod[1], url + '/api/d/' + kod[1] + '/'] : [])]) {   // a code-site page is served without the trailing / (with / it returns 308)
-        const html = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => r.ok ? r.text() : '').catch(() => '');
-        const k = satirKaniti(html.slice(0, 3 * 1024 * 1024), n); if (k) { j = { mesaj: beklenen, ...k }; break; }
-      }
-      if (!j) for (const a of adaylar) { j = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => r.ok ? r.json() : null).catch(() => null); if (j?.mesaj) break; j = null; }
-      if (!j) return gonder(res, 400, { hata: 'kanit_yok' });
-      const imzalayan = j.mesaj === beklenen ? imzaDogrula(j.mesaj, j.publicKey, j.signature) : null;
-      if (!imzalayan || imzalayan !== kompakt(sahipAdresi(n))) return gonder(res, 403, { hata: 'kanit_gecersiz', beklenen });
-      veri.siteler[n] = { ...(veri.siteler[n] || {}), baslik: veri.siteler[n]?.baslik || n + '.nim', yayin: Date.now(), dis: url }; kirli = true;
-      rmSync(join(SITELER, n), { recursive: true, force: true });
+      const k = await kanitDogrula(n, url);
+      if (k.hata === 'kanit_yok') return gonder(res, 400, { hata: 'kanit_yok' });
+      if (k.hata) return gonder(res, 403, { hata: 'kanit_gecersiz', beklenen: k.beklenen });
+      siteBagla(n, url);
       return gonder(res, 200, { ok: true, dis: url });
     }
     // bee counter for external sites: <script src=".../ari.js" data-isim="knock"></script>
@@ -660,6 +685,7 @@ const sunucu = createServer(async (req, res) => {
     if ((m = p.match(/^\/api\/ziyaret\/([a-z0-9-]{1,32})$/)) && (req.method === 'POST' || req.method === 'OPTIONS')) {
       izinVer(res); if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
       const n = m[1]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' });
+      otoBagla(n, String(req.headers.origin || '')).catch(() => {});
       if (!ilkZiyaret(req, n)) return gonder(res, 200, { bugun: ziyaretBugun(n) });
       const z = veri.ziyaret[n]; if (!z || z.gun !== bugun()) veri.ziyaret[n] = { gun: bugun(), bugun: 1, toplam: (z?.toplam || 0) + 1 }; else { z.bugun++; z.toplam++; }
       kirli = true; return gonder(res, 200, { bugun: veri.ziyaret[n].bugun });

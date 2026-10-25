@@ -57,6 +57,18 @@ The same line proves the site is yours and counts one visit per browser per day.
 
 Visits are counted by the Hive server, not on chain; permanent bees rest on wallet signatures.
 
+## Linking a site with a coding agent (what the human does, what you do)
+
+The site is linked to the name by the owner's wallet signature, so one step is always the human's. Everything else you can do.
+
+1. The human needs a .nim name. If they have none: open Pigeon (https://pigeon.heylogram.com) in Nimiq Pay, type a name, pay (or enter a gift code such as HIVE80 for a free 5+ letter name). You cannot register or pay for them.
+2. The human signs once: open https://hive.heylogram.com/#n=<name> (Nimiq Pay, or a desktop browser with the Heylogram Wallet extension), "Is this cell yours? Sign in", Site -> My own server, type the site address (https, the origin, e.g. https://app.example.com), "1 · Sign, get the line", copy the line and give it to you. Never ask for their recovery words or private key.
+3. You: paste the line right before `</body>` in the page served at that address (index.html, or the root layout in Next.js), then deploy the way the project already deploys (git push to Vercel/Netlify, `vercel deploy`, GitHub Pages ...). Do not change the line; the signature covers the name and the exact address.
+4. Done: the first visit to the page links the cell by itself (or the human presses "2 · Link the site"). The site then shows in the hive window and opens by its name in the Webboos browser (type `<name>.nim` in the address bar; Microsoft Store: https://apps.microsoft.com/detail/9PLD8SQ416FT). Check: `GET https://signal.heylogram.tv/kovanapi/api/hive` lists the cell with `site.dis` set.
+5. Optional: add `db.signIn(wallet)` from the SDK for permanent bees, and the other features in this guide.
+
+On a computer the human can use the Heylogram Wallet extension (https://chromewebstore.google.com/detail/heylogram-wallet/khfghhlakeijakdnjkdicmfplhmgoedj) for steps 1-2; it provides the same wallet interface Mini Apps use in Nimiq Pay.
+
 ## HiveDB
 
 ```js

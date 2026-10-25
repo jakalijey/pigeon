@@ -10,6 +10,8 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 - **Pay button for any website.** `<nim-pay to="mando" amount="5">` in the SDK shows the name and amount and pays by name on click (see [sdk/README.md](sdk/README.md)).
 - **Recent people.** The send screen shows the names you paid and who paid you; tap one to pay again. Kept inside Nimiq Pay too.
 - **Look-alike warning.** When a name looks like another registered name (`rnando` and `mando`), both Identicons show side by side before you pay.
+- **A site links itself.** After the owner signs once in Hive and the signed line is on the page, the first visit links the cell; no "Link" button needed. The signature is the proof, so nobody else can link a site to your name. A coding agent can do everything after that one signature (see [AGENTS.md](AGENTS.md)).
+- **Add your site, right after the ring.** Pigeon shows a card that opens your Hive cell as soon as the name is yours.
 - **Counter card in Hive.** Get paid → Print the card: your name, your Identicon and a QR of your address on one sheet.
 - **Public usage numbers.** `GET /api/stats` shows names, owners, requests, paid requests, splits and distinct payers.
 - **README.** Two pictures at the top: one name, one home; every home, one window. README now opens with what Pigeon adds to Nimiq, what it costs and why it pays in NIM.
