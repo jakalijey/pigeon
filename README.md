@@ -143,9 +143,15 @@ The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents 
 
 Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
 
-**November 2026: Faces and languages**
+**November 2026: Faces, languages and paying again**
 - Spanish, next to English and Turkish.
 - Profiles: a display name and a short line on every name.
+- A one-line "Pay by name" button for any website (`<nim-pay>` in the SDK).
+- Recent people: the names you paid and who paid you, one tap to pay again.
+- Look-alike warning: names that look alike (`rnando` and `mando`) show both Identicons before you pay.
+- A printable "Pay me by name" card with a QR code for every name, and a menu template for cafes and stalls in Hive.
+- Receipts: a page for every paid request, order or till sale, linked to its transaction on chain (a receipt, not an invoice).
+- A usage chart in the hive window: names, payments and distinct payers per week, gift names shown apart.
 
 **December 2026: Names that move**
 - Transfer a name to another address, or list it for sale at a price.
@@ -153,7 +159,11 @@ Pigeon keeps growing after the competition. The first three updates have dates; 
 
 **January 2027: Money together**
 - Community jar: a group collects for a shared goal and everyone sees who paid.
-- Repeating requests for monthly dues or a shared rent.
+- Repeating requests for monthly dues or a shared rent, with a reminder when a part is late.
+- Shared tab: who owes whom in a flat or on a trip, settled by name. Pigeon only keeps the record; money goes wallet to wallet.
+- Payment events for developers: get "a payment for this name arrived" without running your own chain watcher.
+- USDT by name, once USDT payments are back in Nimiq Pay (gas is paid from the user's own wallet).
+- An open note standard: the `nim:` rules and the lookup API in one document, so any wallet can read the same names.
 
 **Done early (October 2026)**
 - Sub-names such as `cafe.pigeon.nim`, given by the owner of the parent name or claimed by players when the owner opens them.
