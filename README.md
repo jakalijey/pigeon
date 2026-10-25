@@ -135,7 +135,7 @@ A name is more useful when something lives at it. [Hive](https://hive.heylogram.
 
 - **On a computer too.** Mini Apps are made for Nimiq Pay on a phone, but they also run in a desktop browser:
   - **Heylogram Wallet** ([Chrome extension](https://chromewebstore.google.com/detail/heylogram-wallet/khfghhlakeijakdnjkdicmfplhmgoedj)). When there is no Nimiq Pay, it provides the same wallet interface Mini Apps use (`window.nimiq`: accounts, sign, send), so a Mini App or a site using the SDK can sign in, sign and pay from a computer. Every signature and payment is confirmed in the extension.
-  - **Webboos** ([desktop browser](https://webboos.heylogram.com)). Once a name has a site in Hive (uploaded or linked), type the name in the address bar, for example `garura.nim`, and the site opens under that name, with no domain to buy. The Heylogram Wallet comes built in.
+  - **Webboos** ([desktop browser](https://webboos.heylogram.com)). Once a name has a site in Hive (uploaded or linked), type the name in the address bar, for example `garura.nim`, and the site opens under that name, with no domain to buy. The download from webboos.heylogram.com has the Heylogram Wallet built in; the Microsoft Store version adds it from the Chrome Web Store.
 
 The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents can read the full API in [AGENTS.md](AGENTS.md). A test game that uses every feature runs at <https://signal.heylogram.tv/kovanapi/s/garura/>.
 
