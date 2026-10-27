@@ -14,7 +14,7 @@ Nimiq has no names of its own: an address is 36 characters. Pigeon adds the miss
 
 Live numbers: <https://signal.heylogram.tv/pigeonapi/api/stats> (names, requests, paid requests, distinct payers).
 
-Videos: [first release](https://youtu.be/gAgeB7Ck_w8) · [every name gets a home](https://youtu.be/vo6qgR4q9zA). What changed and when: [CHANGELOG.md](CHANGELOG.md).
+Videos: [first release](https://youtu.be/gAgeB7Ck_w8) · [every name gets a home](https://youtu.be/vo6qgR4q9zA). What changed and when: [CHANGELOG.md](CHANGELOG.md). Why it exists, as a short story: [The pigeon and the tea stall](docs/STORY.md).
 
 Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the right address. Every person shows up with their Nimiq Identicon, so you can see that the pigeon really belongs to them.
 
