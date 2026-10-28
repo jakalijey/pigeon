@@ -44,7 +44,7 @@ function mix(h1, h2, t) { const a = parseInt(h1.slice(1), 16), b = parseInt(h2.s
 
 export function playSplash({ title, tagline, ready }) {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const night = matchMedia('(prefers-color-scheme: dark)').matches;
+  const t = document.documentElement.dataset.tema, night = t ? t === 'gece' : matchMedia('(prefers-color-scheme: dark)').matches;
   const root = document.createElement('div');
   root.className = 'splash' + (night ? ' night' : '');
   root.innerHTML = `<div class="stage"><svg viewBox="-6 -6 112 112"></svg><div class="words"><b></b><span></span></div></div>`;

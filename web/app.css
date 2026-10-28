@@ -1,8 +1,10 @@
 :root{--sky1:#BFE0F4;--sky2:#FFF1DF;--paper:#FFFDF7;--paper2:#F4EADA;--line:#E6D9C3;--ink:#1F2348;--muted:#6E6A7E;--orange:#FC8702;--orangeD:#C25F00;
   --seal:#D94432;--gold:#E9B213;--green:#14907E;--greenBg:#DDF1EC;--wire:#5A5F80;--hand:"Segoe Print","Bradley Hand","Comic Sans MS",cursive;--font:"Segoe UI",Mulish,system-ui,sans-serif;--mono:Consolas,ui-monospace,monospace;
   --top:env(safe-area-inset-top,0px);--bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root{--sky1:#0B0E2A;--sky2:#2A2F63;--paper:#2A2E58;--paper2:#232650;--line:#3A3F75;--ink:#F4ECDC;--muted:#ADA9C8;--orange:#FF9A2E;--orangeD:#FFB35C;
+@media (prefers-color-scheme:dark){:root:not([data-tema=gunduz]){--sky1:#0B0E2A;--sky2:#2A2F63;--paper:#2A2E58;--paper2:#232650;--line:#3A3F75;--ink:#F4ECDC;--muted:#ADA9C8;--orange:#FF9A2E;--orangeD:#FFB35C;
   --seal:#FA7268;--green:#3FD3BB;--greenBg:#1C4048;--wire:#8A8FB8}}
+:root[data-tema=gece]{--sky1:#0B0E2A;--sky2:#2A2F63;--paper:#2A2E58;--paper2:#232650;--line:#3A3F75;--ink:#F4ECDC;--muted:#ADA9C8;--orange:#FF9A2E;--orangeD:#FFB35C;
+  --seal:#FA7268;--green:#3FD3BB;--greenBg:#1C4048;--wire:#8A8FB8}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body{background:linear-gradient(180deg,var(--sky1),var(--sky2) 62%) fixed;font-family:var(--font);color:var(--ink);overflow-x:hidden}
@@ -13,7 +15,8 @@ button,input{font:inherit;color:inherit}
 .moon,.star{display:none;position:absolute}
 .moon{right:30px;top:62px;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 78% 30%,transparent 21px,#F6E7B8 22px);filter:drop-shadow(0 0 14px rgba(246,231,184,.35))}
 .star{width:3px;height:3px;border-radius:50%;background:#fff;opacity:.7}
-@media (prefers-color-scheme:dark){.cloud{opacity:.08}.moon,.star{display:block}}
+@media (prefers-color-scheme:dark){:root:not([data-tema=gunduz]) .cloud{opacity:.08}:root:not([data-tema=gunduz]) .star{display:block}}
+:root[data-tema=gece] .cloud{opacity:.08}:root[data-tema=gece] .star{display:block}
 #app{position:relative;z-index:1;min-height:100%;width:100%;padding:calc(14px + var(--top)) 18px calc(96px + var(--bottom));display:flex;flex-direction:column;gap:12px}
 @media (min-width:700px){#app{padding-left:max(18px,calc(50% - 300px));padding-right:max(18px,calc(50% - 300px))}}
 .brand{display:flex;align-items:center;gap:8px;font:700 15px var(--font)}.brand svg{width:30px;height:30px}
@@ -194,7 +197,42 @@ html.typing #app{padding-bottom:96px}
 
 #sbOpen { margin-top: 14px; width: 100%; }
 
-.hivecard { display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 12px 14px; border-radius: 16px; background: var(--card, #fff); border: 1px solid var(--line, rgba(0,0,0,.08)); color: inherit; text-decoration: none; }
+.hivecard { display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 12px 14px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
 .hivecard .hx { flex: none; width: 34px; height: 34px; background: #D97706; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
-.hivecard span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; } .hivecard b { font-size: 15px; } .hivecard small { opacity: .7; font-size: 13px; }
+.hivecard span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; } .hivecard b { font-size: 15px; color: var(--ink); } .hivecard small { font: 13px var(--font); color: var(--muted); }
 .hivecard .ar { margin-left: auto; opacity: .5; display: flex; } .hivecard .ar svg { width: 18px; height: 18px; }
+
+
+/* welcome card after a new name: honey tone, hexagon glow, free badge, SDK chip */
+.welcome { position: relative; display: block; box-sizing: border-box; width: 100%; max-width: 100%; margin: 16px 0 6px; padding: 18px 16px 14px; border-radius: 20px; overflow: hidden;
+  background: linear-gradient(140deg, #FFF7E8 0%, #FDE9C4 55%, #F8D79A 100%); border: 1px solid rgba(217,119,6,.28);
+  box-shadow: 0 10px 28px rgba(180,83,9,.16); animation: wIn .5s cubic-bezier(.2,.8,.2,1) both; }
+.welcome::after { content: ""; position: absolute; right: -40px; top: -40px; width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.75), transparent 70%); pointer-events: none; }
+.welcome .wbadge { position: relative; display: inline-block; margin-bottom: 10px; padding: 4px 10px; border-radius: 999px;
+  background: #2B1608; color: #FBBF24; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.welcome .wmain { position: relative; display: flex; align-items: center; gap: 14px; color: #2B1608; text-decoration: none; }
+.welcome .hx { flex: none; width: 44px; height: 44px; background: linear-gradient(160deg, #F59E0B, #D97706);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); animation: wGlow 2.4s ease-in-out infinite; }
+.welcome .wtx { display: flex; flex-direction: column; min-width: 0; }
+.welcome .wtx b { font-size: 16px; } .welcome .wtx small { font-size: 13px; color: #6B4A2B; margin-top: 2px; }
+.welcome .ar { margin-left: auto; display: flex; color: #B45309; } .welcome .ar svg { width: 20px; height: 20px; }
+.welcome .wsdk { position: relative; display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 12px;
+  border-radius: 12px; background: rgba(255,255,255,.7); border: 1px solid rgba(180,83,9,.18); color: #7C3AED;
+  font-size: 13px; font-weight: 600; text-decoration: none; }
+.welcome .wsdk svg { width: 16px; height: 16px; }
+@keyframes wIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes wGlow { 0%,100% { filter: drop-shadow(0 0 0 rgba(245,158,11,0)); } 50% { filter: drop-shadow(0 0 8px rgba(245,158,11,.7)); } }
+@media (prefers-reduced-motion: reduce) { .welcome, .welcome .hx { animation: none; } }
+
+/* moon (night) / sun (day): tap to switch the theme by hand; the choice is remembered */
+.temabtn { position: fixed; right: 30px; top: calc(62px + var(--top)); z-index: 3; width: 54px; height: 54px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: radial-gradient(circle, #FFD45C 0 46%, rgba(255,212,92,.35) 47% 58%, transparent 60%); transition: transform .25s, filter .25s; }
+.temabtn:active { transform: scale(.9); }
+@media (prefers-color-scheme:dark){:root:not([data-tema=gunduz]) .temabtn { background: radial-gradient(circle at 78% 30%, transparent 21px, #F6E7B8 22px); filter: drop-shadow(0 0 14px rgba(246,231,184,.35)); }}
+:root[data-tema=gece] .temabtn { background: radial-gradient(circle at 78% 30%, transparent 21px, #F6E7B8 22px); filter: drop-shadow(0 0 14px rgba(246,231,184,.35)); }
+
+/* links under the Hive card: link an existing site, see the cell, pay button */
+.hivelinks { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 2px 4px 4px; }
+.hivelinks a { font-size: 13px; font-weight: 600; color: var(--orangeD); text-decoration: none; }
+.hivecard.live .hx { background: #16A34A; }

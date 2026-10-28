@@ -3,7 +3,9 @@ const TONES = {
   day: { a: '#FFFDF7', b: '#E8DFCC', c: '#CFC3AA', g: '#FC8702', k: '#1F2348' },
   night: { a: '#F4ECDC', b: '#CFC6E6', c: '#A39BC6', g: '#FF9A2E', k: '#1F2348' },
 };
-export const tone = () => (matchMedia('(prefers-color-scheme: dark)').matches ? TONES.night : TONES.day);
+// night = the choice made by tapping the moon/sun (data-tema), else the phone's own setting
+export const isNight = () => { const t = document.documentElement.dataset.tema; return t ? t === 'gece' : matchMedia('(prefers-color-scheme: dark)').matches; };
+export const tone = () => (isNight() ? TONES.night : TONES.day);
 
 export function perched(r = tone()) {
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
