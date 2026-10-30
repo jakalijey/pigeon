@@ -1,4 +1,5 @@
 import { perched, flying, logo, postmark, isNight } from './pigeon.js?v=2';
+import { sahneHTML } from './sahne.js';
 import { playSplash } from './splash.js?v=2';
 import { playEvent } from './events.js?v=3';
 import qrcode from 'qrcode-generator';
@@ -31,7 +32,7 @@ const TEXTS = {
     ringT: 'Get your pigeon a ring', free: 'This ring is free', taken: (a) => `Taken by ${a}`, reserved: 'Reserved', invalid: 'Letters, digits and single dashes only',
     price: 'Engraving', forever: 'Duration', foreverV: 'Forever', how: 'How', howV: 'Note', rule: 'Rule', ruleV: 'First on chain wins',
     ringHint: 'With a ring your friends find you by name, and your pigeon always lands at the right window.',
-    hiveT: (n) => `${n}.nim has a cell in Hive`, hiveS: 'Your site, a shop, a QR till, tips.', siteAddT: 'Welcome! Your cell in Hive is ready', siteAddS: 'It goes in the window and opens by your name.', sdkL: 'Building an app? The SDK is on GitHub', freeB: 'Free until Nov 11', upFree: 'Upload your site free until Nov 11.', up: 'Upload your site: it goes in the window and opens by your name.', haveSite: 'Already have a site? Link it with one line', liveT: (n) => `${n}.nim is live`, liveS: (v, b) => `Today ${v} visitors · ${b} bees`, seeHive: 'See it in the hive', payL: 'Take NIM payments on your site with one line',
+    hiveT: (n) => `${n}.nim has a cell in Hive`, hiveS: 'Your site, a shop, a QR till, tips.', siteAddT: 'Your cell in Hive is ready: put your site in it', siteAddS: 'Upload your site, or link the one you already have with one line. It opens by your name.', sdkL: 'Building an app? The SDK is on GitHub', freeB: 'Free until Nov 11', upFree: 'Upload your site free until Nov 11.', up: 'Upload your site: it goes in the window and opens by your name.', haveSite: 'Already have a site? Link it with one line', liveT: (n) => `${n}.nim is live`, liveS: (v, b) => `Today ${v} visitors · ${b} bees`, seeHive: 'See it in the hive', openSite: 'Open the site', hiveTile: 'Hive', payL: 'Take NIM payments on your site with one line',
     subOpenOn: 'Players can take their own sub-ring: ON', subOpenOff: 'Players can take their own sub-ring: OFF', subOpenHint: 'When on, your app can let each player take name.yours.nim for their own wallet. First come, first served. You can turn it off any time.', subOpenSent: 'Sent; it changes in a few seconds',
     subQ: (p) => `Give sub-rings under ${p}.nim`, subPh: 'name', subTo: 'Address or name.nim (empty = you)', subGive: (n) => `Give ${n}`, subLong: 'Too long: name + your name must be 22 letters or less', subTaken: 'Already taken', subBadTo: 'Address or name not found', subDone: (n) => `${n} is on its way`, subList: 'Given sub-rings', subNone: 'None yet',
     giftQ: 'Have a gift code?', giftPh: 'GIFT CODE', giftOk: (n) => `Gift code works: free (${n} left)`, giftBad: 'This code is not valid or has run out', giftShort: 'Gift codes work for names with 5 or more letters', giftFree: 'free',
@@ -61,7 +62,7 @@ const TEXTS = {
     ringT: 'Güvercinine halka taktır', free: 'Bu halka boşta', taken: (a) => `${a} takıyor`, reserved: 'Ayrılmış', invalid: 'Yalnız harf, rakam ve tek tire',
     price: 'Kazıma ücreti', forever: 'Süre', foreverV: 'Süresiz', how: 'Nasıl', howV: 'Nota', rule: 'Kural', ruleV: 'Zincirde ilk yazan alır',
     ringHint: 'Halka takılınca arkadaşların seni isminle bulur; güvercinin hep doğru pencereye konar.',
-    hiveT: (n) => `${n}.nim için Hive'da peteğin var`, hiveS: 'Siten, dükkânın, QR kasa, bahşiş.', siteAddT: 'Hoş geldin! Hive’da peteğin hazır', siteAddS: 'Vitrine çıkar, isminle açılır.', sdkL: 'Uygulama mı yapıyorsun? SDK GitHub’da', freeB: '11 Kasım’a kadar ücretsiz', upFree: '11 Kasım’a kadar siteni ücretsiz yükle.', up: 'Siteni yükle: vitrine çıkar, isminle açılır.', haveSite: 'Siten zaten var mı? Tek satırla bağla', liveT: (n) => `${n}.nim yayında`, liveS: (v, b) => `Bugün ${v} ziyaretçi · ${b} arı`, seeHive: 'Kovanda gör', payL: 'Sitende tek satırla NIM ödemesi al',
+    hiveT: (n) => `${n}.nim için Hive'da peteğin var`, hiveS: 'Siten, dükkânın, QR kasa, bahşiş.', siteAddT: 'Hive’da peteğin hazır: siteni koy', siteAddS: 'Siteni yükle ya da var olan siteni tek satırla bağla. İsminle açılır.', sdkL: 'Uygulama mı yapıyorsun? SDK GitHub’da', freeB: '11 Kasım’a kadar ücretsiz', upFree: '11 Kasım’a kadar siteni ücretsiz yükle.', up: 'Siteni yükle: vitrine çıkar, isminle açılır.', haveSite: 'Siten zaten var mı? Tek satırla bağla', liveT: (n) => `${n}.nim yayında`, liveS: (v, b) => `Bugün ${v} ziyaretçi · ${b} arı`, seeHive: 'Kovanda gör', openSite: 'Siteyi aç', hiveTile: 'Kovan', payL: 'Sitende tek satırla NIM ödemesi al',
     subOpenOn: 'Oyuncular kendi alt halkasını alabilir: AÇIK', subOpenOff: 'Oyuncular kendi alt halkasını alabilir: KAPALI', subOpenHint: 'Açıkken uygulaman her oyuncuya isim.senin.nim halkasını kendi cüzdanına aldırabilir. İlk alan kazanır. İstediğin zaman kapatırsın.', subOpenSent: 'Gönderildi; birkaç saniyede değişir',
     subQ: (p) => `${p}.nim altında halka ver`, subPh: 'isim', subTo: 'Adres ya da isim.nim (boş = sen)', subGive: (n) => `${n} ver`, subLong: 'Çok uzun: isim + senin ismin en çok 22 harf olmalı', subTaken: 'Bu alt halka alınmış', subBadTo: 'Adres ya da isim bulunamadı', subDone: (n) => `${n} yolda`, subList: 'Verdiğin alt halkalar', subNone: 'Henüz yok',
     giftQ: 'Hediye kodun var mı?', giftPh: 'HEDİYE KODU', giftOk: (n) => `Hediye kodu geçerli: bedava (${n} hak kaldı)`, giftBad: 'Bu kod geçerli değil ya da hakkı bitti', giftShort: 'Hediye kodu 5 ve daha uzun isimlerde geçer', giftFree: 'bedava',
@@ -107,7 +108,8 @@ const SDK_URL = 'https://github.com/jakalijey/pigeon/tree/main/sdk';
 const PAY_URL = 'https://github.com/jakalijey/pigeon/tree/main/sdk#a-pay-button-nim-pay';
 const FREE = () => Date.now() < Date.UTC(2026, 10, 11, 23, 59, 59);   // free site upload offer; after it the cards drop the "free" line
 const ARROW = () => ICON('<path d="M9 6l6 6-6 6"/>');
-// the Hive card on the home screen says what fits the cell: no site yet / site live (visits, bees, pay button)
+// the Hive card on the home screen says what fits the cell: no site yet / site live (visits, bees, pay button).
+// It always leads to the cell in Hive; a live site is a link under it (for the pigeon name that site is this very app)
 let hiveList = null;
 async function hiveCell(name) {
   if (!hiveList) { try { const r = await fetch('https://signal.heylogram.tv/kovanapi/api/hive'); hiveList = (await r.json()).petekler || []; } catch { return undefined; } }
@@ -116,8 +118,8 @@ async function hiveCell(name) {
 function hiveCard(name, cell) {
   const cellUrl = `${HIVE_SITE}/#n=${encodeURIComponent(name)}`;
   if (cell && cell.site && cell.site.adres) {
-    return `<a class="hivecard live" href="${esc(cell.site.adres)}" target="_blank" rel="noopener"><span class="hx"></span><span><b>${esc(T.liveT(name))}</b><small>${esc(T.liveS(cell.ziyaret?.bugun || 0, cell.kullanici || 0))}</small></span><span class="ar">${ARROW()}</span></a>
-<div class="hivelinks"><a href="${cellUrl}" target="_blank" rel="noopener">${esc(T.seeHive)}</a><a href="${PAY_URL}" target="_blank" rel="noopener">${esc(T.payL)}</a></div>`;
+    return `<a class="hivecard live" href="${cellUrl}" target="_blank" rel="noopener"><span class="hx"></span><span><b>${esc(T.liveT(name))}</b><small>${esc(T.liveS(cell.ziyaret?.bugun || 0, cell.kullanici || 0))}</small></span><span class="ar">${ARROW()}</span></a>
+<div class="hivelinks"><a href="${esc(cell.site.adres)}" target="_blank" rel="noopener">${esc(T.openSite)}</a><a href="${PAY_URL}" target="_blank" rel="noopener">${esc(T.payL)}</a></div>`;
   }
   const sub = cell === undefined ? T.hiveS : (FREE() ? T.upFree : T.up);
   return `<a class="hivecard" href="${cellUrl}" target="_blank" rel="noopener"><span class="hx"></span><span><b>${esc(T.hiveT(name))}</b><small>${esc(sub)}</small></span><span class="ar">${ARROW()}</span></a>
@@ -345,6 +347,13 @@ ${desk ? `<div class="qrbox"><div class="qr">${qr}</div><p class="hint">${esc(T.
 <button class="link" id="retry">${esc(T.retry)}</button></div>`;
 }
 
+// five stamps share one row: a label that still doesn't fit (a phone set to larger text) shrinks until it does
+function fitStamps() {
+  document.querySelectorAll('.stamps.bes .stamp').forEach((st) => {
+    let f = parseFloat(getComputedStyle(st).fontSize);
+    while (st.scrollWidth > st.clientWidth && f > 7) { f -= 0.5; st.style.fontSize = f + 'px'; }
+  });
+}
 ROUTES.home = async () => {
   const contacts = store.get('contacts', []).slice(0, 3);
   const spots = [[6, 66], [36, 80], [66, 70]];
@@ -352,11 +361,12 @@ ROUTES.home = async () => {
   const nameHtml = me.name ? `${esc(me.name)}<em>.nim</em>` : esc(T.noRing);
   const body = me.address ? `<div class="coop"><div class="me">${idn(me.address, 46)}<div style="min-width:0"><b class="name">${nameHtml}</b><small>${esc(short(me.address))}</small></div></div>
 <div class="balance"><b>${me.balance == null ? '…' : nim(me.balance, 2)}</b><span>NIM</span></div>
-<div class="stamps"><button class="stamp hot" data-go="send">${ICON('<path d="M5 12h12M12 6l6 6-6 6"/>')}${esc(T.send)}</button><button class="stamp" data-go="request">${ICON('<path d="M19 12H7M12 6l-6 6 6 6"/>')}${esc(T.request)}</button><button class="stamp" data-go="split">${ICON('<circle cx="12" cy="12" r="8"/><path d="M12 4v16M12 12l6 5"/>')}${esc(T.split)}</button><button class="stamp" data-go="name">${ICON('<ellipse cx="12" cy="12" rx="8" ry="4.5"/><ellipse cx="12" cy="12" rx="4" ry="2"/>')}${esc(T.ring)}</button></div>
+<div class="stamps${me.name && !me.name.includes('.') ? ' bes' : ''}"><button class="stamp hot" data-go="send">${ICON('<path d="M5 12h12M12 6l6 6-6 6"/>')}${esc(T.send)}</button><button class="stamp" data-go="request">${ICON('<path d="M19 12H7M12 6l-6 6 6 6"/>')}${esc(T.request)}</button><button class="stamp" data-go="split">${ICON('<circle cx="12" cy="12" r="8"/><path d="M12 4v16M12 12l6 5"/>')}${esc(T.split)}</button><button class="stamp" data-go="name">${ICON('<ellipse cx="12" cy="12" rx="8" ry="4.5"/><ellipse cx="12" cy="12" rx="4" ry="2"/>')}${esc(T.ring)}</button>${me.name && !me.name.includes('.') ? `<a class="stamp" href="${HIVE_SITE}/#n=${encodeURIComponent(me.name)}" target="_blank" rel="noopener">${ICON('<path d="M12 3l7.5 4.3v9.4L12 21l-7.5-4.3V7.3z"/>')}${esc(T.hiveTile)}</a>` : ''}</div>
 ${me.name && !me.name.includes('.') ? `<div id="hivebox">${hiveCard(me.name)}</div>` : ''}
 <div class="letters" id="letters"><p class="hint">${esc(T.letters)}…</p></div></div>`
     : connectCard();
   screen(`<div class="brand">${logo()}${esc(T.app)}</div><div class="wire"><svg class="w" viewBox="0 0 410 60" preserveAspectRatio="none"><path d="M0 18 Q205 52 410 18" fill="none" stroke="var(--wire)" stroke-width="2"/></svg>${perches}</div>${body}`);
+  fitStamps();
   if (me.name && !me.name.includes('.')) hiveCell(me.name).then((cell) => { const box = $('#hivebox'); if (box && cell !== undefined) box.innerHTML = hiveCard(me.name, cell); });
   app().querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dataset.go));
   app().querySelectorAll('[data-c]').forEach((b) => b.onclick = () => { const c = contacts[b.dataset.c]; go('send', { to: c.name ? c.name + '.nim' : pretty(c.address) }); });
@@ -733,7 +743,7 @@ ${me.name && !me.name.includes('.') ? `<details class="gift sub"><summary>${esc(
         if (!me.name) me.name = name;
         $('#st').innerHTML = '';
         // right after the ring: a welcome card that leads to the cell in Hive, plus the SDK for builders
-        showRing(name, r, true).then(() => { $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>${name.includes('.') ? '' : `<div class="welcome">${FREE() ? `<span class="wbadge">${esc(T.freeB)}</span>` : ''}<a class="wmain" href="${HIVE_SITE}/#n=${encodeURIComponent(name)}" target="_blank" rel="noopener"><span class="hx"></span><span class="wtx"><b>${esc(T.siteAddT)}</b><small>${esc((FREE() ? T.upFree + ' ' : '') + T.siteAddS)}</small></span><span class="ar">${ICON('<path d="M9 6l6 6-6 6"/>')}</span></a><a class="wsdk" href="${SDK_URL}" target="_blank" rel="noopener">${ICON('<path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/>')}${esc(T.sdkL)}</a></div>`}`; });
+        showRing(name, r, true).then(() => { $('#st').innerHTML = `<span class="ok">${CHECK}${esc(T.yours)}</span>${name.includes('.') ? '' : `<div class="welcome">${FREE() ? `<span class="wbadge">${esc(T.freeB)}</span>` : ''}<a class="wmain" href="${HIVE_SITE}/#n=${encodeURIComponent(name)}" target="_blank" rel="noopener"><span class="hx"></span><span class="wtx"><b>${esc(T.siteAddT)}</b><small>${esc(T.siteAddS)}</small></span><span class="ar">${ICON('<path d="M9 6l6 6-6 6"/>')}</span></a><a class="wsdk" href="${SDK_URL}" target="_blank" rel="noopener">${ICON('<path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/>')}${esc(T.sdkL)}</a></div>`}`; });
         b.textContent = T.done; b.disabled = false; b.onclick = () => go('home');
       } else if (r?.address || Date.now() > until) { clearInterval(timer); toast(r?.address ? T.taken(short(r.address)) : T.failed); b.textContent = T.done; b.disabled = false; b.onclick = () => go('home'); }
     });
@@ -743,11 +753,13 @@ ${me.name && !me.name.includes('.') ? `<details class="gift sub"><summary>${esc(
 async function start() {
   try { const t = localStorage.getItem('pg_tema'); if (t === 'gece' || t === 'gunduz') document.documentElement.dataset.tema = t; } catch {}
   const sky = document.createElement('div'); sky.className = 'sky';
-  sky.innerHTML = `<i class="cloud" style="left:-20px;top:70px"></i><i class="cloud" style="right:-10px;top:120px;transform:scale(.7)"></i>` + [[10, 70], [30, 40], [80, 170], [55, 90], [88, 60], [24, 150]].map(([x, y]) => `<i class="star" style="left:${x}%;top:${y}px"></i>`).join('');
+  sky.innerHTML = `<i class="cloud" style="left:-20px;top:70px"></i><i class="cloud" style="right:-10px;top:120px;transform:scale(.7)"></i>` + [[10, 70], [30, 40], [80, 170], [55, 90], [88, 60], [24, 150]].map(([x, y]) => `<i class="star" style="left:${x}%;top:${y}px"></i>`).join('') + sahneHTML();
   document.body.prepend(sky);
   const temaBtn = document.createElement('button'); temaBtn.className = 'temabtn'; temaBtn.type = 'button';
   const temaAd = () => temaBtn.setAttribute('aria-label', isNight() ? (lang === 'tr' ? 'Gündüze geç' : 'Switch to day') : (lang === 'tr' ? 'Geceye geç' : 'Switch to night'));
-  temaBtn.onclick = () => { const t = isNight() ? 'gunduz' : 'gece'; document.documentElement.dataset.tema = t; try { localStorage.setItem('pg_tema', t); } catch {} temaAd(); };
+  const temaDegis = () => { const t = isNight() ? 'gunduz' : 'gece'; document.documentElement.dataset.tema = t; try { localStorage.setItem('pg_tema', t); } catch {} temaAd(); };
+  // slow switch on desktop (sun and moon turn), instant on phones and in Nimiq Pay
+  temaBtn.onclick = () => { if (!matchMedia('(min-width: 1000px) and (hover: hover)').matches) return temaDegis(); if (temaBtn.classList.contains('don')) return; temaBtn.classList.add('don'); setTimeout(temaDegis, 280); setTimeout(() => temaBtn.classList.remove('don'), 720); };
   temaAd(); document.body.append(temaBtn);
   app().innerHTML = `<div class="brand">${logo()}${esc(T.app)}</div>`;
   const loading = loadMe();

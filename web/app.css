@@ -54,6 +54,9 @@ button,input{font:inherit;color:inherit}
   background:var(--paper2);padding:7px;-webkit-mask:linear-gradient(#000 0 0) content-box,radial-gradient(circle 3.4px,transparent 3.1px,#000 3.6px) -5px -5px/10px 10px round;mask:linear-gradient(#000 0 0) content-box,radial-gradient(circle 3.4px,transparent 3.1px,#000 3.6px) -5px -5px/10px 10px round}
 .stamp svg{width:34px;height:34px}
 .stamp.hot{background:var(--orange);color:#fff}
+/* a name owner gets a fifth stamp, Hive: five in one row, a little smaller. minmax(0,1fr): a long label (Request, Get ring) or a phone's larger text size must not push the row out of the card */
+.stamps.bes{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.stamps.bes .stamp{min-width:0;font-size:min(11px,3vw);padding:4px 2px;white-space:nowrap;overflow:hidden;letter-spacing:-.01em}.stamps.bes .stamp svg{width:min(28px,7.4vw);height:min(28px,7.4vw);flex:none}
+a.stamp{text-decoration:none}
 .letters{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .lt{display:flex;align-items:center;gap:10px;font-size:13.5px}.lt .idn{width:28px;height:28px}.lt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lt b{font-weight:800}.lt .in{color:var(--green)}
 .connect{border-radius:22px;background:var(--paper);padding:18px;display:flex;flex-direction:column;gap:10px}
@@ -236,3 +239,98 @@ html.typing #app{padding-bottom:96px}
 .hivelinks { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 2px 4px 4px; }
 .hivelinks a { font-size: 13px; font-weight: 600; color: var(--orangeD); text-decoration: none; }
 .hivecard.live .hx { background: #16A34A; }
+
+/* desktop background: classic school drawing (sahne.js); only on wide screens with a mouse, hidden on phones */
+@property --sky1 { syntax: '<color>'; inherits: true; initial-value: #BFE0F4; }
+@property --sky2 { syntax: '<color>'; inherits: true; initial-value: #FFF1DF; }
+@property --paper { syntax: '<color>'; inherits: true; initial-value: #FFFDF7; }
+@property --paper2 { syntax: '<color>'; inherits: true; initial-value: #F4EADA; }
+@property --ink { syntax: '<color>'; inherits: true; initial-value: #1F2348; }
+@property --muted { syntax: '<color>'; inherits: true; initial-value: #6E6A7E; }
+@property --line { syntax: '<color>'; inherits: true; initial-value: #E6D9C3; }
+.sahne, .sh-gok { display: none; }
+@media (min-width: 1000px) and (hover: hover) {
+  .sahne, .sh-gok { display: block; }
+  :root { transition: --sky1 3s ease-in-out, --sky2 3s ease-in-out, --paper 1s ease, --paper2 1s ease, --ink 1s ease, --muted 1s ease, --line 1s ease; }
+  .temabtn.don { animation: shDon .7s ease-in-out; }
+  .cloud { animation: shBulut 70s ease-in-out infinite alternate; }
+  .cloud + .cloud { animation-duration: 90s; animation-delay: -30s; }
+}
+.sahne { position: absolute; left: 0; right: 0; bottom: 0; height: clamp(220px, 32vh, 360px);
+  --cim1: #8FD07C; --cim2: #A9DD95; --turkuaz: #6DD5C8; --su: #8CCBF2; --su2: #E6F5FF; --duvar: #FFDDB0; --cati: #E8664F; --kapi: #B9814F;
+  --cam: #DDF2FF; --cerceve: #5A6D9A; --govde: #9A6B45; --yaprak: #63B85C; --yol: #F3DFBA; --yun: #FFFFFF; --koyunkafa: #3E3F4D; --duman: #FFFFFF;
+  --ahir: #C8463C; --yansima: #FFE38A;
+  transition: --cim1 3s, --cim2 3s, --turkuaz 3s, --su 3s, --su2 3s, --duvar 3s, --cati 3s, --kapi 3s, --cam 1.2s 1.6s, --cerceve 3s,
+    --govde 3s, --yaprak 3s, --yol 3s, --yun 3s, --duman 3s, --ahir 3s, --yansima 3s; }
+@property --cim1 { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --cim2 { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --turkuaz { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --su { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --su2 { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --duvar { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --cati { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --kapi { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --cam { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --cerceve { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --govde { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --yaprak { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --yol { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --yun { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --duman { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --ahir { syntax: '<color>'; inherits: true; initial-value: #000; }
+@property --yansima { syntax: '<color>'; inherits: true; initial-value: #000; }
+
+.sahne svg { position: absolute; bottom: 0; height: 100%; }
+.sh-tepe { left: 0; width: 100%; }
+.sh-sol { left: 0; width: calc(50% - 320px); }
+.sh-sag { right: 0; width: calc(50% - 320px); }
+.sh-turkuaz { fill: var(--turkuaz); } .sh-cim1 { fill: var(--cim1); } .sh-cim2 { fill: var(--cim2); }
+.sh-yol { fill: var(--yol); } .sh-duvar { fill: var(--duvar); } .sh-cati { fill: var(--cati); } .sh-baca { fill: var(--cati); filter: brightness(.85); }
+.sh-kapi { fill: var(--kapi); } .sh-cam rect { fill: var(--cam); } .sh-cerceve { stroke: var(--cerceve); stroke-width: 3; fill: none; }
+.sh-govde { fill: var(--govde); } .sh-yaprak { fill: var(--yaprak); } .sh-su { fill: var(--su); }
+.sh-ahir { fill: var(--ahir); } .sh-ahirdam { fill: none; stroke: var(--cerceve); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.sh-ahirkapi { fill: var(--duvar); } .sh-ahircizgi { stroke: var(--ahir); stroke-width: 3; }
+.sh-yun { fill: var(--yun); } .sh-kafa { fill: var(--koyunkafa); stroke: var(--koyunkafa); stroke-linecap: round; } .sh-goz { fill: #fff; stroke: none; }
+.sh-bacak line { stroke: var(--koyunkafa); stroke-width: 5; stroke-linecap: round; }
+.sh-kol line { stroke: #F6CDA6; stroke-width: 4.5; stroke-linecap: round; }
+.sh-ip { fill: none; stroke: #7C3AED; stroke-width: 3.5; stroke-linecap: round; }
+.sh-sap { fill: none; stroke: #3E9B4F; stroke-width: 3.5; stroke-linecap: round; } .sh-papatya { fill: #fff; }
+.sh-dalga path { fill: none; stroke: var(--su2); stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 24 34; animation: shAkis 3.2s linear infinite; }
+.sh-yansima { fill: var(--yansima); opacity: .55; transform-box: fill-box; transform-origin: center; animation: shYansi 4s ease-in-out infinite; }
+.sh-parilti path { stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: 0; animation: shParla 2.2s ease-in-out infinite; }
+.sh-duman { fill: var(--duman); opacity: 0; transform-box: fill-box; transform-origin: center; animation: shDuman 4.2s linear infinite; }
+.sh-koyun { animation: shZip 2.4s ease-in-out infinite; }
+.sh-kafa { transform-box: fill-box; transform-origin: 20% 30%; animation: shOtla 7s ease-in-out infinite; }
+.sh-cicek { transform-box: fill-box; transform-origin: 50% 100%; animation: shSallan 3s ease-in-out infinite; }
+.sh-ates { display: none; fill: #FFF3A0; animation: shAtes 2.8s ease-in-out infinite; }
+/* back to day: show first, then walk back into place */
+.sh-git { transition: opacity .5s ease, transform 3s ease-in-out .3s; }
+.sh-gok { position: absolute; left: 0; right: 0; top: 0; height: 60vh; overflow: hidden; transition: opacity 2s; }
+.sh-kus { position: absolute; left: 0; animation: shUc linear infinite; }
+.sh-kus svg { display: block; }
+.sh-kus path { fill: none; stroke: #4A5070; stroke-width: 3; stroke-linecap: round; transform-origin: center; animation: shKanat .55s ease-in-out infinite; }
+@keyframes shAkis { to { stroke-dashoffset: -116; } }
+@keyframes shDuman { 0% { transform: translate(0, 0) scale(.5); opacity: 0; } 15% { opacity: .8; } 100% { transform: translate(22px, -90px) scale(1.6); opacity: 0; } }
+@keyframes shZip { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes shOtla { 0%, 55%, 100% { transform: rotate(0); } 65%, 90% { transform: rotate(26deg); } }
+@keyframes shSallan { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+@keyframes shYansi { 0%, 100% { transform: scaleX(1); opacity: .45; } 50% { transform: scaleX(1.35); opacity: .7; } }
+@keyframes shParla { 0%, 100% { opacity: 0; } 50% { opacity: .9; } }
+@keyframes shAtes { 0%, 100% { opacity: .1; transform: translate(0, 0); } 50% { opacity: 1; transform: translate(4px, -6px); } }
+@keyframes shUc { from { transform: translateX(-80px); } to { transform: translateX(calc(100vw + 80px)); } }
+@keyframes shKanat { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(-.4); } }
+@keyframes shBulut { from { translate: 0 0; } to { translate: 160px 0; } }
+/* desktop only: sun / moon swap on tap sinks, the theme changes, the other one rises; phones and Nimiq Pay keep the instant switch */
+@keyframes shDon { 0% { transform: scale(1) rotate(0); } 40% { transform: scale(.15) rotate(120deg); opacity: .3; } 100% { transform: scale(1) rotate(0); } }
+/* night: the girl walks home, the sheep go into the barn, the birds leave, fireflies come out */
+@media (prefers-color-scheme: dark) {
+:root:not([data-tema=gunduz]) .sahne { --cim1: #1E4A47; --cim2: #24564F; --turkuaz: #1F6F73; --su: #2C4F8C; --su2: #6F95D0; --duvar: #5C4C70; --cati: #7A3B4A; --kapi: #4A3550; --cam: #FFD76A; --cerceve: #2A2E58; --govde: #4A3530; --yaprak: #2C5C45; --yol: #4A4466; --yun: #C9C6E0; --duman: #8A8FB8; --ahir: #6A3040; --yansima: #F6E7B8; }
+:root:not([data-tema=gunduz]) .sh-git { transform: translate(var(--gx), var(--gy)); opacity: 0; transition: transform 3s ease-in-out, opacity .6s ease 2.7s; }
+:root:not([data-tema=gunduz]) .sh-ates { display: block; }
+:root:not([data-tema=gunduz]) .sh-gok { opacity: 0; }
+}
+:root[data-tema=gece] .sahne { --cim1: #1E4A47; --cim2: #24564F; --turkuaz: #1F6F73; --su: #2C4F8C; --su2: #6F95D0; --duvar: #5C4C70; --cati: #7A3B4A; --kapi: #4A3550; --cam: #FFD76A; --cerceve: #2A2E58; --govde: #4A3530; --yaprak: #2C5C45; --yol: #4A4466; --yun: #C9C6E0; --duman: #8A8FB8; --ahir: #6A3040; --yansima: #F6E7B8; }
+:root[data-tema=gece] .sh-git { transform: translate(var(--gx), var(--gy)); opacity: 0; transition: transform 3s ease-in-out, opacity .6s ease 2.7s; }
+:root[data-tema=gece] .sh-ates { display: block; }
+:root[data-tema=gece] .sh-gok { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .sahne *, .sh-gok *, .cloud { animation: none !important; } :root, .sahne, .sh-git { transition: none !important; } }

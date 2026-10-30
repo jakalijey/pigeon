@@ -2,6 +2,13 @@
 
 What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> always runs the latest version.
 
+## 30 October 2026: Hive one tap away
+
+- **Hive stamp.** A name owner gets a fifth stamp next to Get ring that opens the name's cell in Hive. The five stamps share one row; on a phone set to larger text, a label that doesn't fit shrinks until it does.
+- **The live card leads to Hive.** "name.nim is live" now opens the cell in Hive (visits, bees, the till); the site itself is the "Open the site" link under it. For the pigeon name the site was Pigeon itself, so the card seemed to do nothing.
+- **Right after the ring.** The welcome card says it plainly: upload your site, or link the one you already have with one line.
+- **Desktop scene.** On wide screens a small village sits behind the app; at night the child walks home and the sheep go to the barn.
+
 ## 25 October 2026: Free names for builders
 
 - **Gift code HIVE80.** The first 80 builders get a free `.nim` name with 5 or more letters: type the name in Pigeon, enter `HIVE80`, sign a 1 luna transaction. One per wallet, until 11 November 2026. The campaign is announced on chain by the registry.
