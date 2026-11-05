@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { buildTable, parseNote, priceOf, isValidName, paymentsFor, parseGift, parseRedeem, giftHash, giftStatus, giftOpen, GIFT_MIN_LEN, parseSub, isValidFullName, parseSubToggle, subsOpen } from './rules.mjs';
 
 const REG = 'NQ31 7GP4 BBVA MCYB D6DG JU0N E1YH RFQ2 G5DB';
-const PRICES = [[2, 1000e5], [3, 500e5], [4, 200e5], [5, 50e5]];
+const PRICES = [[1, 73000e5], [2, 1000e5], [3, 500e5], [4, 200e5], [5, 50e5]];
 const compact = (a) => String(a || '').replace(/\s/g, '').toUpperCase();
 const hex = (s) => Buffer.from(s, 'utf8').toString('hex');
 const tx = (o) => ({ recipient: REG, state: 'confirmed', executionResult: true, value: 200e5, blockHeight: 100, transactionHash: 'aa', sender: 'NQ00 AAAA', ...o, data: { raw: hex(o.note ?? 'nim:mert') } });
@@ -17,7 +17,7 @@ t('note parsing', () => {
   assert.equal(parseNote(hex('nim:-mert')), null);
 });
 t('valid names', () => { assert.ok(isValidName('a1-b')); assert.ok(!isValidName('a--b')); assert.ok(!isValidName('x'.repeat(33))); });
-t('price by length', () => { assert.equal(priceOf('ab', PRICES), 1000e5); assert.equal(priceOf('abcd', PRICES), 200e5); assert.equal(priceOf('abcdefgh', PRICES), 50e5); assert.equal(priceOf('a', PRICES), 1000e5); });
+t('price by length', () => { assert.equal(priceOf('ab', PRICES), 1000e5); assert.equal(priceOf('abcd', PRICES), 200e5); assert.equal(priceOf('abcdefgh', PRICES), 50e5); assert.equal(priceOf('a', PRICES), 73000e5); });
 t('first registration wins', () => {
   const { names } = buildTable([tx({ sender: 'NQ02 BBBB', blockHeight: 120, transactionHash: 'b1' }), tx({ sender: 'NQ01 AAAA', blockHeight: 110, transactionHash: 'a1' })], opts);
   assert.equal(names.get('mert').owner, 'NQ01AAAA');

@@ -4,6 +4,7 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 
 ## 6 November 2026: Choose the name you show
 
+- **One-letter names.** They now have their own price: 73,000 NIM. Other prices stay the same.
 - **One address, many names, your choice.** If you own more than one name, Pigeon's ring screen lets you pick the one that shows for your address in every app. It is a 1 luna transaction with the note `ana:<name>`. Your other names stay yours and keep receiving payments.
 - **SDK.** `allNames(address)` and `setMainName(name)`. `/api/address/:address` now also returns `names`.
 

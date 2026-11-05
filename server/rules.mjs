@@ -9,7 +9,7 @@ export function isValidName(name) {
 }
 
 export function priceOf(name, table) {
-  const n = Math.max(2, Math.min(5, name.length));
+  const n = Math.max(1, Math.min(5, name.length));
   const row = table.find(([len]) => len === n);
   return row ? row[1] : Infinity;
 }
