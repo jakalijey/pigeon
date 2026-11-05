@@ -31,7 +31,7 @@ Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the ri
 
 Everything happens with real NIM on Nimiq mainnet, through the Nimiq Pay wallet. The app never holds keys or funds.
 
-**Cost.** Using Pigeon is free and takes no fee on payments. Registering a name is a one-time payment (5 or more letters: 50 NIM, 4: 200, 3: 500, 2: 1000, 1: 73000), with no yearly rent; the gift code `HIVE80` gives the first 80 builders a free name until 11 November 2026.
+**Cost.** Using Pigeon is free and takes no fee on payments. Registering a name is a one-time payment (5 or more letters: 50 NIM, 4: 200, 3: 500, 2: 1000, 1: 100000), with no yearly rent; the gift code `HIVE80` gives the first 80 builders a free name until 11 November 2026.
 
 **Tokens.** Pigeon pays in NIM, which meets the Cycle III rule ("USDT, NIM, or both"). USDT by name is planned: today a Mini App needs POL for gas to send USDT on Polygon, and USDT payments in Nimiq Pay were under maintenance on 25 October 2026.
 
