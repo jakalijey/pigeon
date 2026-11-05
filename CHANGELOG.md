@@ -2,6 +2,11 @@
 
 What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> always runs the latest version.
 
+## 6 November 2026: Choose the name you show
+
+- **One address, many names, your choice.** If you own more than one name, Pigeon's ring screen lets you pick the one that shows for your address in every app. It is a 1 luna transaction with the note `ana:<name>`. Your other names stay yours and keep receiving payments.
+- **SDK.** `allNames(address)` and `setMainName(name)`. `/api/address/:address` now also returns `names`.
+
 ## 30 October 2026: Hive one tap away
 
 - **Hive stamp.** A name owner gets a fifth stamp next to Get ring that opens the name's cell in Hive. The five stamps share one row; on a phone set to larger text, a label that doesn't fit shrinks until it does.

@@ -116,6 +116,8 @@ const me = await db.myName(address); // { own: 'mert', sub: 'lale.mygame', choic
 await db.useName('sub');             // the player picks which name shows in this app: 'own' | 'sub'
 await nim.subsOpen();                // true when the owner lets players claim sub-names
 await nim.claimSub('lale');          // the player claims lale.mygame.nim for their own wallet (tiny tx)
+await nim.allNames('NQ44 …');        // { main, names }: the name an address shows and all it owns
+await nim.setMainName('mert');       // the owner chooses which of their names shows, in every app (tiny tx)
 ```
 
 - Do not offer a sub-name to the cell owner (db.owner() equals the signed-in address).

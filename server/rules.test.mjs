@@ -269,4 +269,31 @@ t('pending creator: a tx whose sender is not resolved yet is skipped', () => {
   assert.equal(buildTable([tx({ note: 'nim:mert', sender: null })], opts).names.size, 0);
 });
 
+t('display name: the owner chooses, latest choice wins', () => {
+  const A = compact('NQ00 AAAA'), r0 = tx({ note: 'nim:first', blockHeight: 100, transactionHash: 'a' }), r1 = tx({ note: 'nim:second', blockHeight: 101, transactionHash: 'b' });
+  assert.equal(buildTable([r0, r1], opts).primary.get(A), 'first');
+  const pick = (name, h, o = {}) => tx({ note: 'ana:' + name, value: 1, blockHeight: h, transactionHash: 'p' + h, ...o });
+  assert.equal(buildTable([r0, r1, pick('second', 102)], opts).primary.get(A), 'second');
+  assert.equal(buildTable([r0, r1, pick('second', 102), pick('first', 103)], opts).primary.get(A), 'first');
+});
+t('display name: a name of someone else, an unregistered name or a too-early choice do nothing', () => {
+  const A = compact('NQ00 AAAA'), B = compact('NQ02 BBBB');
+  const r0 = tx({ note: 'nim:first', blockHeight: 100, transactionHash: 'a' }), rb = tx({ note: 'nim:other', sender: 'NQ02 BBBB', blockHeight: 100, transactionHash: 'b' });
+  const pick = (name, h, o = {}) => tx({ note: 'ana:' + name, value: 1, blockHeight: h, transactionHash: 'p' + h, ...o });
+  const t1 = buildTable([r0, rb, pick('other', 102), pick('nobody', 103)], opts);
+  assert.equal(t1.primary.get(A), 'first'); assert.equal(t1.primary.get(B), 'other');
+  assert.equal(buildTable([pick('first', 99), r0], opts).primary.get(A), 'first');
+  const r2 = tx({ note: 'nim:second', blockHeight: 101, transactionHash: 'c' });
+  assert.equal(buildTable([r0, pick('second', 100.5), r2], opts).primary.get(A), 'first', 'the name must exist before the choice');
+});
+t('display name: a sub-name can be chosen, also one given by someone else, but only by its owner', () => {
+  const P = compact('NQ00 AAAA'), G = PLAYER, G2 = compact(G);
+  const top = tx({ note: 'nim:sunset', blockHeight: 100, transactionHash: 'a' }), give = tx({ note: 'alt:lale.sunset:' + G2, value: 1, blockHeight: 101, transactionHash: 'b' });
+  const pick = (o) => tx({ note: 'ana:lale.sunset', value: 1, blockHeight: 102, transactionHash: 'c', ...o });
+  assert.equal(buildTable([top, give], opts).primary.get(G2), undefined);
+  assert.equal(buildTable([top, give, pick({ sender: G })], opts).primary.get(G2), 'lale.sunset');
+  assert.equal(buildTable([top, give, pick({})], opts).primary.get(P), 'sunset', 'the parent owner cannot choose a name that belongs to another');
+  assert.equal(buildTable([top, give, pick({})], opts).names.size, 2);
+});
+
 console.log(`${n} tests passed`);

@@ -68,6 +68,11 @@ export function parseSubToggle(hex) {
   const m = /^alt(ac|kapa):([a-z0-9-]{1,32})$/.exec(text(hex));
   return m && isValidName(m[2]) ? { parent: m[2], open: m[1] === 'ac' } : null;
 }
+// Display name: an owner sends "ana:<name>" to choose which of their own names shows for their address. The latest valid choice wins.
+export function parsePrimary(hex) {
+  const m = /^ana:([a-z0-9-]{1,32}(?:\.[a-z0-9-]{1,32})?)$/.exec(text(hex));
+  return m && isValidFullName(m[1]) ? m[1] : null;
+}
 export const isValidFullName = (n) => { const p = String(n).split('.'); return (p.length === 1 || p.length === 2) && p.every(isValidName); };
 
 // Single pass in block order; campaigns and personal gifts come from the registry's own (plain) outgoing transactions. The FIRST valid registration of a name wins.
@@ -78,6 +83,7 @@ export function analyze(txs, { registry, prices }) {
   const owners = new Map();                  // name -> owner (first registration)
   const openSubs = new Set();                // parent names with open sub-names
   const giftUsed = new Set();                // "fp|address": one gift per address per campaign
+  const chosen = new Map();                  // owner -> the name they chose to show
   const out = [];
   const add = (t, name, owner, extra) => {
     if (owners.has(name)) return false;
@@ -110,6 +116,11 @@ export function analyze(txs, { registry, prices }) {
       if (owners.get(toggle.parent) === me) toggle.open ? openSubs.add(toggle.parent) : openSubs.delete(toggle.parent);
       continue;
     }
+    const pick = parsePrimary(t.data?.raw);
+    if (pick) {
+      if (owners.get(pick) === me) chosen.set(me, pick);
+      continue;
+    }
     const sub = parseSub(t.data?.raw);
     if (sub) {
       if (RESERVED.has(sub.sub)) continue;
@@ -128,12 +139,13 @@ export function analyze(txs, { registry, prices }) {
     // if the code fails, the normal rule applies: it still registers when the payment covers the price
     if (t.value >= priceOf(r.name, prices)) add(t, r.name, me);
   }
-  return { regs: out, campaigns, openSubs };
+  return { regs: out, campaigns, openSubs, chosen };
 }
 export const registrationsFrom = (txs, opts) => analyze(txs, opts).regs;
 
-// Reverse name (an address's own name): only from names it took itself or got as a registry gift; sub-names given by others do not count
-export function tableFrom({ regs }) {
+// Reverse name (an address's own name): the name its owner chose with "ana:"; otherwise the first it took itself or got as a registry gift.
+// A sub-name given by someone else counts only if the owner chooses it.
+export function tableFrom({ regs, chosen }) {
   const names = new Map();
   const primary = new Map();
   for (const r of regs) {
@@ -141,6 +153,7 @@ export function tableFrom({ regs }) {
     names.set(r.name, r);
     if (!r.given && !primary.has(r.owner)) primary.set(r.owner, r.name);
   }
+  for (const [owner, name] of chosen || []) primary.set(owner, name);
   return { names, primary };
 }
 export const buildTable = (txs, opts) => tableFrom(analyze(txs, opts));

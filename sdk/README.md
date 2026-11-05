@@ -44,6 +44,8 @@ nim.badge(element, 'NQ44 …');              // writes "mando.nim" into the elem
 | `label(name)` | `{ own, parent, full }`, for example `mert`, `sunset.nim`, `mert.sunset.nim`. |
 | `badge(el, address, options?)` | Writes the name into `el`. Options: `format(label)` for your own text, `className`, `small: false` to hide the parent name. |
 | `names(address)` | `{ own, sub }`: the player's own .nim name and their sub-name under `app`, if any. |
+| `allNames(address)` | `{ main, names }`: the name the address shows now and every name it owns. |
+| `setMainName(name)` | The owner chooses which of their names shows for their address, in every app. 1 luna to the registry with the note `ana:<name>`. |
 | `subsOpen()` | `true` when the owner of `app` lets players claim their own sub-name. |
 | `claimSub(sub)` | The player takes `sub.app` for their own wallet (only while sub-names are open). |
 | `giveSub(sub, to)` | The owner of `app` gives `sub.app` to an address or a `name.nim`. |
@@ -99,7 +101,7 @@ A sub-name and its parent together can be at most 22 characters.
 
 ### Two names, the player chooses
 
-A player may own `mert.nim` and also take `lale.mygame.nim`. Show their own name by default; if they have both, let them pick with `db.useName('own' | 'sub')`. Sub-names never become cells on the hive map; they are listed inside their parent's cell.
+A player may own `mert.nim` and also take `lale.mygame.nim`. By default an address shows the first name it took. To change that everywhere, the owner calls `setMainName('mert')` or uses the Pigeon app: the other name stays theirs and keeps receiving payments. To change it only inside your app, use `db.useName('own' | 'sub')`. Sub-names never become cells on the hive map; they are listed inside their parent's cell.
 
 ### Always check payments on chain
 

@@ -157,7 +157,8 @@ http.createServer(async (req, res) => {
         const acc = await chain.account(pretty(a)).catch(() => null);
         const type = acc?.type || 'basic';
         const creator = type === 'htlc' ? await chain.creatorOf(pretty(a)).catch(() => null) : null;
-        return send(res, 200, { name: nameOf(a) || (creator ? nameOf(creator) : null), type, creator: creator ? pretty(creator) : null });
+        const sahip = !registry?.namesOf?.(a)?.length && creator ? creator : a;   // a vault's names belong to whoever created it
+        return send(res, 200, { name: nameOf(sahip), names: registry?.namesOf?.(sahip) || [], type, creator: creator ? pretty(creator) : null });
       }
       if ((m = p.match(/^\/api\/balance\/([0-9A-Za-z %]{36,80})$/)) && isAddress(compact(decodeURIComponent(m[1])))) {
         return send(res, 200, { value: await chain.balance(pretty(decodeURIComponent(m[1]))) });

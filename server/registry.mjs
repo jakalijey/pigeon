@@ -76,6 +76,7 @@ export async function createRegistry({ chain, registry, prices, cacheFile, log =
     return r ? { name, address: r.owner, since: r.time, height: r.height, tx: r.hash, index: top.indexOf(name) + 1, subsOpen: meta.openSubs.has(name) } : { name, free: true, price: priceOf(name, prices) };
   }
   const reverse = (address) => state.table.primary.get(compact(address)) || null;
+  const namesOf = (address) => { const a = compact(address), out = []; for (const r of state.table.names.values()) if (r.owner === a) out.push(r.name); return out; };
   const info = () => ({ open: true, registry, prices, names: state.table.names.size });
   // The hive map shows parent names only, in order; sub-names are users of their parent (subs = unique sub-name owners)
   const subsOf = (parent) => (state.subs.get(parent) || []).map((r) => ({ name: r.name, address: r.owner, height: r.height, time: r.time }));
@@ -84,5 +85,5 @@ export async function createRegistry({ chain, registry, prices, cacheFile, log =
   const gift = (code) => giftStatusFrom(state.meta, code);
   const giftActive = () => giftOpenFrom(state.meta);
 
-  return { open: true, lookup, reverse, info, list, subsOf, gift, giftActive };
+  return { open: true, lookup, reverse, namesOf, info, list, subsOf, gift, giftActive };
 }

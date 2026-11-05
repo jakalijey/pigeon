@@ -7,7 +7,10 @@ import { ring } from './ring.js?v=1';
 
 const host = window.nimiqPay?.language || navigator.language || 'en';
 const pickLang = (l) => (String(l || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
-let lang = pickLang(host);
+// a language the user picked with the TR/EN button wins over the browser and over Nimiq Pay
+// (Electron browsers report the Windows language, not the browser setting)
+const savedLang = (() => { try { const s = localStorage.getItem('pg_dil'); return s === 'tr' || s === 'en' ? s : null; } catch { return null; } })();
+let lang = savedLang || pickLang(host);
 document.documentElement.lang = lang;
 
 const TEXTS = {
@@ -34,6 +37,7 @@ const TEXTS = {
     ringHint: 'With a ring your friends find you by name, and your pigeon always lands at the right window.',
     hiveT: (n) => `${n}.nim has a cell in Hive`, hiveS: 'Your site, a shop, a QR till, tips.', siteAddT: 'Your cell in Hive is ready: put your site in it', siteAddS: 'Upload your site, or link the one you already have with one line. It opens by your name.', sdkL: 'Building an app? The SDK is on GitHub', freeB: 'Free until Nov 11', upFree: 'Upload your site free until Nov 11.', up: 'Upload your site: it goes in the window and opens by your name.', haveSite: 'Already have a site? Link it with one line', liveT: (n) => `${n}.nim is live`, liveS: (v, b) => `Today ${v} visitors · ${b} bees`, seeHive: 'See it in the hive', openSite: 'Open the site', hiveTile: 'Hive', payL: 'Take NIM payments on your site with one line',
     subOpenOn: 'Players can take their own sub-ring: ON', subOpenOff: 'Players can take their own sub-ring: OFF', subOpenHint: 'When on, your app can let each player take name.yours.nim for their own wallet. First come, first served. You can turn it off any time.', subOpenSent: 'Sent; it changes in a few seconds',
+    pickQ: 'Which name shows for you', pickNow: 'Showing', pickSet: 'Show this', pickSent: 'Sent. It changes when the transaction is in a block', pickDone: (n) => `You now show as ${n}`, pickHint: 'This name shows for your address in every app. Your other names keep working and still receive payments. Costs 1 luna.',
     subQ: (p) => `Give sub-rings under ${p}.nim`, subPh: 'name', subTo: 'Address or name.nim (empty = you)', subGive: (n) => `Give ${n}`, subLong: 'Too long: name + your name must be 22 letters or less', subTaken: 'Already taken', subBadTo: 'Address or name not found', subDone: (n) => `${n} is on its way`, subList: 'Given sub-rings', subNone: 'None yet',
     giftQ: 'Have a gift code?', giftPh: 'GIFT CODE', giftOk: (n) => `Gift code works: free (${n} left)`, giftBad: 'This code is not valid or has run out', giftShort: 'Gift codes work for names with 5 or more letters', giftFree: 'free',
     engrave: 'Engrave the ring', engraving: 'Engraving on chain…', yours: 'The ring is yours', closed: 'Ring registry opens soon', mine: 'Your rings',
@@ -64,6 +68,7 @@ const TEXTS = {
     ringHint: 'Halka takılınca arkadaşların seni isminle bulur; güvercinin hep doğru pencereye konar.',
     hiveT: (n) => `${n}.nim için Hive'da peteğin var`, hiveS: 'Siten, dükkânın, QR kasa, bahşiş.', siteAddT: 'Hive’da peteğin hazır: siteni koy', siteAddS: 'Siteni yükle ya da var olan siteni tek satırla bağla. İsminle açılır.', sdkL: 'Uygulama mı yapıyorsun? SDK GitHub’da', freeB: '11 Kasım’a kadar ücretsiz', upFree: '11 Kasım’a kadar siteni ücretsiz yükle.', up: 'Siteni yükle: vitrine çıkar, isminle açılır.', haveSite: 'Siten zaten var mı? Tek satırla bağla', liveT: (n) => `${n}.nim yayında`, liveS: (v, b) => `Bugün ${v} ziyaretçi · ${b} arı`, seeHive: 'Kovanda gör', openSite: 'Siteyi aç', hiveTile: 'Kovan', payL: 'Sitende tek satırla NIM ödemesi al',
     subOpenOn: 'Oyuncular kendi alt halkasını alabilir: AÇIK', subOpenOff: 'Oyuncular kendi alt halkasını alabilir: KAPALI', subOpenHint: 'Açıkken uygulaman her oyuncuya isim.senin.nim halkasını kendi cüzdanına aldırabilir. İlk alan kazanır. İstediğin zaman kapatırsın.', subOpenSent: 'Gönderildi; birkaç saniyede değişir',
+    pickQ: 'Hangi ismin görünsün', pickNow: 'Görünen', pickSet: 'Bunu göster', pickSent: 'Gönderildi. İşlem bloğa girince değişir', pickDone: (n) => `Artık ${n} olarak görünüyorsun`, pickHint: 'Bu isim her uygulamada adresinin yanında görünür. Diğer isimlerin çalışmaya ve para almaya devam eder. 1 luna tutar.',
     subQ: (p) => `${p}.nim altında halka ver`, subPh: 'isim', subTo: 'Adres ya da isim.nim (boş = sen)', subGive: (n) => `${n} ver`, subLong: 'Çok uzun: isim + senin ismin en çok 22 harf olmalı', subTaken: 'Bu alt halka alınmış', subBadTo: 'Adres ya da isim bulunamadı', subDone: (n) => `${n} yolda`, subList: 'Verdiğin alt halkalar', subNone: 'Henüz yok',
     giftQ: 'Hediye kodun var mı?', giftPh: 'HEDİYE KODU', giftOk: (n) => `Hediye kodu geçerli: bedava (${n} hak kaldı)`, giftBad: 'Bu kod geçerli değil ya da hakkı bitti', giftShort: 'Hediye kodu 5 ve daha uzun isimlerde geçer', giftFree: 'bedava',
     engrave: 'Halkayı taktır', engraving: 'Zincire kazınıyor…', yours: 'Halka artık senin', closed: 'Halka defteri yakında açılıyor', mine: 'Halkaların',
@@ -73,7 +78,7 @@ const TEXTS = {
   },
 };
 let T = TEXTS[lang];
-function setLang(l) { if (!l || pickLang(l) === lang) return; lang = pickLang(l); T = TEXTS[lang]; document.documentElement.lang = lang; }
+function setLang(l, chosen) { if (!l || (savedLang && !chosen) || pickLang(l) === lang) return; lang = pickLang(l); T = TEXTS[lang]; document.documentElement.lang = lang; }
 const markPay = () => document.documentElement.classList.add('inpay');
 let fullHeight = 0;
 const keyboardCheck = () => {
@@ -628,6 +633,7 @@ ROUTES.name = async () => {
 <div class="namebox"><input id="nm" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="32" placeholder="${esc(lang === 'tr' ? 'isim' : 'name')}"><em>.nim</em></div><span id="st"></span>
 <div class="recipe" id="rc"></div><p class="hint">${esc(reg.open ? T.ringHint : T.closed)}</p>
 <details class="gift" hidden><summary>${esc(T.giftQ)}</summary><div class="namebox"><input id="hk" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="24" placeholder="${esc(T.giftPh)}"></div><span id="hkSt"></span></details>
+<details class="gift pick" id="pick" hidden><summary>${esc(T.pickQ)}</summary><div id="pickList"></div><p class="hint">${esc(T.pickHint)}</p></details>
 ${me.name && !me.name.includes('.') ? `<details class="gift sub"><summary>${esc(T.subQ(me.name))}</summary><div class="namebox"><input id="sb" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="22" placeholder="${esc(T.subPh)}"><em>.${esc(me.name)}.nim</em></div><div class="namebox"><input id="sbTo" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="${esc(T.subTo)}"></div><span id="sbSt"></span><button class="btn" id="sbGo" disabled>${esc(T.subGive('…'))}</button><p class="hint" id="sbList"></p><button class="btn" id="sbOpen" disabled>…</button><p class="hint">${esc(T.subOpenHint)}</p></details>` : ''}`,
   `<button class="btn main" id="go" disabled>${esc(reg.open ? T.engrave : T.closed)}</button>`);
   const recipe = (name, price, code) => { $('#rc').innerHTML = `<div><span>${esc(T.price)}</span><b>${code ? esc(T.giftFree) : price ? nim(price) + ' NIM' : '—'}</b></div><div><span>${esc(T.forever)}</span><b>${esc(T.foreverV)}</b></div><div><span>${esc(T.how)}</span><b>${esc(T.howV)} <code>nim:${esc(name || '…')}${code ? ':' + esc(code) : ''}</code></b></div><div><span>${esc(T.rule)}</span><b>${esc(T.ruleV)}</b></div>`; };
@@ -661,6 +667,27 @@ ${me.name && !me.name.includes('.') ? `<details class="gift sub"><summary>${esc(
       if (r.free) goLabel();
     }, 300);
   };
+  // display name: an owner of two or more names picks the one that shows: 1 luna to the registry + "ana:<name>" (only the owner's transaction counts)
+  const pickDraw = (d) => {
+    const xs = d?.names || [];
+    if (xs.length < 2 || !$('#pick')) return;
+    $('#pick').hidden = false;
+    $('#pickList').innerHTML = xs.map((n) => `<div class="pickrow"><span><b>${esc(n)}</b><small>.nim</small></span>${n === d.name ? `<span class="ok">${CHECK}${esc(T.pickNow)}</span>` : `<button class="btn" data-pick="${esc(n)}">${esc(T.pickSet)}</button>`}</div>`).join('');
+    document.querySelectorAll('#pickList [data-pick]').forEach((b) => { b.onclick = async () => {
+      const n = b.dataset.pick;
+      document.querySelectorAll('#pickList [data-pick]').forEach((x) => { x.disabled = true; });
+      try { await wallet.send(reg.registry, 1, 'ana:' + n); } catch (e) { walletError(e); pickDraw(d); return; }
+      toast(T.pickSent);
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 4000));
+        if (!$('#pick')) return;
+        const x = await api('/api/address/' + me.address).catch(() => null);
+        if (x?.name === n) { me.name = n; toast(T.pickDone(n + '.nim')); return ROUTES.name(); }
+      }
+      pickDraw(d);
+    }; });
+  };
+  api('/api/address/' + me.address).then(pickDraw).catch(() => {});
   // sub-ring: a name owner gives a name under their own → 1 luna to the registry + "alt:<sub>.<name>:<address>" (only the owner's transaction counts)
   if ($('#sb')) {
     const parent = me.name;
@@ -761,6 +788,15 @@ async function start() {
   // slow switch on desktop (sun and moon turn), instant on phones and in Nimiq Pay
   temaBtn.onclick = () => { if (!matchMedia('(min-width: 1000px) and (hover: hover)').matches) return temaDegis(); if (temaBtn.classList.contains('don')) return; temaBtn.classList.add('don'); setTimeout(temaDegis, 280); setTimeout(() => temaBtn.classList.remove('don'), 720); };
   temaAd(); document.body.append(temaBtn);
+  const dilBtn = document.createElement('button'); dilBtn.className = 'dilbtn'; dilBtn.type = 'button';
+  const dilAd = () => { dilBtn.innerHTML = `<b${lang === 'tr' ? ' class="on"' : ''}>TR</b><b${lang === 'en' ? ' class="on"' : ''}>EN</b>`; dilBtn.setAttribute('aria-label', lang === 'tr' ? 'Switch to English' : 'Türkçeye geç'); };
+  dilBtn.onclick = () => {
+    const l = lang === 'tr' ? 'en' : 'tr';
+    try { localStorage.setItem('pg_dil', l); } catch {}
+    setLang(l, true); dilAd(); temaAd();
+    const s = history.state; render(s?.view || 'home', s?.data);
+  };
+  dilAd(); document.body.append(dilBtn);
   app().innerHTML = `<div class="brand">${logo()}${esc(T.app)}</div>`;
   const loading = loadMe();
   let seen = false;

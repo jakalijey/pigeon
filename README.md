@@ -48,7 +48,7 @@ A registration is a transaction that:
 
 If the payment comes from a wallet vault (an HTLC contract, which is how Nimiq Pay holds spendable funds), the name goes to the address that created that vault, which is the wallet's own top-up address. A vault cannot receive later payments, so this keeps every name payable. Anyone can check it: the vault's creation transaction is public.
 
-The earliest valid registration of a name wins: lower block height first, and inside the same block the lower transaction hash. Later payments for a name that is already taken do not change its owner. The first name an address registers is its primary name, used to show who you are.
+The earliest valid registration of a name wins: lower block height first, and inside the same block the lower transaction hash. Later payments for a name that is already taken do not change its owner. The first name an address registers is its primary name, used to show who you are. An owner of several names can choose another one at any time: a transaction to the registry with the note `ana:<name>`. The latest valid choice wins; a choice for a name the sender does not own is ignored.
 
 Prices depend on length: shorter names cost more. A few names such as `nim`, `nimiq`, `admin` and `wallet` are reserved. The exact list and prices are in `server/config.example.json` and `server/rules.mjs`.
 
@@ -108,7 +108,7 @@ Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nim
 | GET | `/api/stats` | public usage: names, owners, requests, paid requests, splits, distinct payers, NIM paid |
 | GET | `/api/names` | all registered names, with their sub-name owners |
 | GET | `/api/name/:name` | owner address, or `free` with price, `reserved`, `invalid` |
-| GET | `/api/address/:address` | primary name of an address |
+| GET | `/api/address/:address` | the name an address shows (`name`) and every name it owns (`names`) |
 | GET | `/api/balance/:address` | balance in luna |
 | GET | `/api/vaults/:address` | balance plus the Nimiq Pay vaults this address created (computed in the background; `pending` until ready) |
 | GET | `/api/subs/:name` | sub-names under a name and whether they are open |

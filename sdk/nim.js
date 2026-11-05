@@ -199,6 +199,21 @@ export function NimNames({ app = null, pigeon = PIGEON, hive = HIVE, cacheMs = 6
       if (!app) throw new Error('subsOpen needs { app: "<your .nim name>" }');
       return !!(await get(`${pigeon}/api/name/${encodeURIComponent(app)}`))?.subsOpen;
     },
+    // Every name an address owns, and the one it shows now. The owner chooses with setMainName().
+    async allNames(address) {
+      if (!isAddress(address)) return { main: null, names: [] };
+      const r = await get(`${pigeon}/api/address/${encodeURIComponent(compact(address))}`);
+      return { main: r?.name || null, names: Array.isArray(r?.names) ? r.names : [] };
+    },
+    // The owner picks which of their names shows for their address everywhere: 1 luna to the registry + "ana:<name>".
+    // Pigeon ignores it if the sender does not own that name.
+    async setMainName(name) {
+      const n = String(name || '').trim().toLowerCase().replace(/\.nim$/, '');
+      if (!NAME.test(n)) throw Object.assign(new Error('not a valid name: ' + name), { code: 'bad_name' });
+      const reg = await registryAddress();
+      const p = await needWallet();
+      return p.sendBasicTransactionWithData({ recipient: reg, value: 1, fee: 0, data: `ana:${n}` });
+    },
     // The player claims <sub>.<app> to their own wallet: 1 luna to the vault + "alt:<sub>.<app>" (Pigeon rule: only valid if the owner opened sub-names)
     async claimSub(sub) {
       if (!app) throw new Error('claimSub needs { app: "<your .nim name>" }');
