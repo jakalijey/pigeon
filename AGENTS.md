@@ -8,7 +8,7 @@ You are writing an app that lives in a Hive cell (a .nim name on the Nimiq chain
 
 ### What a cell gives you
 
-- A static site: upload a .zip (index.html at the root or in one folder). It is served at https://signal.heylogram.tv/kovanapi/s/<name>/ and can get its own domain. No server code runs on Hive.
+- A static site: upload a .zip (index.html at the root or in one folder). It is served at https://api.heylogram.com/hive/s/<name>/ and can get its own domain. No server code runs on Hive.
 - HiveDB: a document database per name (collections → documents → fields), with read/write rules and server-checked field rules.
 - Signed settings: key/value pairs the owner signs with their wallet. Anyone can read and verify them.
 - Sales: the owner lists products; buyers pay the owner's wallet directly; Hive marks orders paid when it sees the payment on chain.
@@ -175,4 +175,4 @@ Make the zip again and upload it in the Site tab. Nothing else changes.
 
 ### Reference app
 
-HAHA (https://signal.heylogram.tv/kovanapi/s/garura/) uses all of the above: sign-in, a leaderboard with field rules (score: whole number 1..1000000, only listed fields, once every 5 s), sub-names with name choice, signed settings (announcement, prize amounts), a shop (golden basket 5 NIM, spaceship 3 NIM), an owner prize panel and tips.
+HAHA (https://api.heylogram.com/hive/s/garura/) uses all of the above: sign-in, a leaderboard with field rules (score: whole number 1..1000000, only listed fields, once every 5 s), sub-names with name choice, signed settings (announcement, prize amounts), a shop (golden basket 5 NIM, spaceship 3 NIM), an owner prize panel and tips.

@@ -17,7 +17,7 @@ Hive is like Vercel (site + custom domain), Firebase (database + rules, sign-in 
 
 ## Example
 
-- [HAHA](https://signal.heylogram.tv/kovanapi/s/garura/): a small game in the garura.nim cell that uses every feature: sign-in, leaderboard with field rules, sub-names, signed settings, a shop, owner prizes and tips.
+- [HAHA](https://api.heylogram.com/hive/s/garura/): a small game in the garura.nim cell that uses every feature: sign-in, leaderboard with field rules, sub-names, signed settings, a shop, owner prizes and tips.
 
 ## Apps
 
