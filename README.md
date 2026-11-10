@@ -2,7 +2,7 @@
 
 Pay anyone on Nimiq by name. A Nimiq Pay mini app with `.nim` names, payment requests and bill splitting.
 
-Live: <https://pigeon.heylogram.com> (open it in Nimiq Pay). Hosted on the Heylogram site platform; the server runs at `signal.heylogram.tv/pigeonapi`.
+Live: <https://pigeon.heylogram.com> (open it in Nimiq Pay). Hosted on the Heylogram site platform; the server runs at `api.heylogram.com/pigeon`.
 
 Nimiq has no names of its own: an address is 36 characters. Pigeon adds the missing name layer on top of Nimiq (a registry read from chain notes, no smart contract) and an [SDK](sdk/README.md) so any Mini App can resolve names and pay by name.
 
@@ -12,7 +12,7 @@ Nimiq has no names of its own: an address is 36 characters. Pigeon adds the miss
 
 ![Every home. One window. Hive's honeycomb shows every Nimiq project with its live site and its users.](docs/hive-every-home-one-window.png)
 
-Live numbers: <https://signal.heylogram.tv/pigeonapi/api/stats> (names, requests, paid requests, distinct payers).
+Live numbers: <https://api.heylogram.com/pigeon/api/stats> (names, requests, paid requests, distinct payers).
 
 Videos: [first release](https://youtu.be/gAgeB7Ck_w8) · [every name gets a home](https://youtu.be/vo6qgR4q9zA) · [one name, many doors: full walkthrough](https://youtu.be/8kqYokFOsWs). What changed and when: [CHANGELOG.md](CHANGELOG.md). Why it exists, as a short story: [The pigeon and the tea stall](docs/STORY.md).
 

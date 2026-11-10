@@ -53,7 +53,7 @@
   <section style="grid-column: 1 / -1">
     <h2>Use it</h2>
     <code class="use">&lt;script type="module"&gt;
-  import { NimNames } from 'https://signal.heylogram.tv/kovanapi/nim.js';
+  import { NimNames } from 'https://api.heylogram.com/hive/nim.js';
   const nim = NimNames({ app: 'mygame' });   // your own .nim name
   const who = await nim.login();             // { address, name }
   await nim.pay('mando', 1);                 // 1 NIM to mando.nim
@@ -62,7 +62,7 @@
 </main>
 <script type="module">
   // Live SDK; to test against a local Hive, change BASE to its address
-  const BASE = 'https://signal.heylogram.tv/kovanapi';
+  const BASE = 'https://api.heylogram.com/hive';
   const { NimNames } = await import(BASE + '/nim.js');
   const nim = NimNames({ app: 'pigeon' });   // replace with your own .nim name
   const $ = (id) => document.getElementById(id);

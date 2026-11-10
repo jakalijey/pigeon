@@ -22,8 +22,8 @@ Or import them straight from the live server:
 
 ```html
 <script type="module">
-  import { NimNames } from 'https://signal.heylogram.tv/kovanapi/nim.js';
-  import { HiveDB } from 'https://signal.heylogram.tv/kovanapi/hive-db.js';
+  import { NimNames } from 'https://api.heylogram.com/hive/nim.js';
+  import { HiveDB } from 'https://api.heylogram.com/hive/hive-db.js';
 </script>
 ```
 
@@ -34,7 +34,7 @@ Names come from the Pigeon registry on the Nimiq chain (see the main [README](..
 ## Names: `nim.js`
 
 ```js
-import { NimNames } from 'https://signal.heylogram.tv/kovanapi/nim.js';
+import { NimNames } from 'https://api.heylogram.com/hive/nim.js';
 const nim = NimNames({ app: 'mygame' });   // app = your own .nim name (needed for login and sub-names)
 
 await nim.resolve('mando');                // { name: 'mando', address: 'NQ44 …' } or null
@@ -69,7 +69,7 @@ Options for `NimNames({ … })`: `app`, `pigeon` and `hive` (server URLs), `cach
 Loading `nim.js` also registers a `<nim-pay>` element, so a page can take payments with no code of its own:
 
 ```html
-<script type="module" src="https://signal.heylogram.tv/kovanapi/nim.js"></script>
+<script type="module" src="https://api.heylogram.com/hive/nim.js"></script>
 <nim-pay to="mando" amount="5" note="coffee"></nim-pay>
 ```
 
@@ -123,7 +123,7 @@ A wallet answer alone is not proof of payment. Before you hand out anything of v
 Every `.nim` name in the hive has a small database. Read access is public or owner-only per collection; write access is owner-only or "each player writes their own document".
 
 ```js
-import { HiveDB } from 'https://signal.heylogram.tv/kovanapi/hive-db.js';
+import { HiveDB } from 'https://api.heylogram.com/hive/hive-db.js';
 const db = HiveDB('mygame');                                   // the database of mygame.nim
 
 await db.signIn();                                             // the player signs with Nimiq Pay; known by their address

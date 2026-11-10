@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository holds Pigeon (server/, web/) and the SDK for apps on .nim names (sdk/nim.js, sdk/hive-db.js). The same guide is served at https://signal.heylogram.tv/kovanapi/llms-full.txt.
+This repository holds Pigeon (server/, web/) and the SDK for apps on .nim names (sdk/nim.js, sdk/hive-db.js). The same guide is served at https://api.heylogram.com/hive/llms-full.txt.
 
 ## Hive: guide for coding agents
 
@@ -25,8 +25,8 @@ You are writing an app that lives in a Hive cell (a .nim name on the Nimiq chain
 ### Setup
 
 ```js
-import { HiveDB } from 'https://signal.heylogram.tv/kovanapi/hive-db.js';
-import { NimNames } from 'https://signal.heylogram.tv/kovanapi/nim.js';
+import { HiveDB } from 'https://api.heylogram.com/hive/hive-db.js';
+import { NimNames } from 'https://api.heylogram.com/hive/nim.js';
 const db = HiveDB('mygame');                 // your cell's .nim name, without .nim
 const nim = NimNames({ app: 'mygame' });
 const wallet = await nim.wallet();           // window.nimiq or the frame bridge; null when there is no wallet
@@ -54,7 +54,7 @@ Where the visits come from:
 - A site on your own server is counted by the one line Hive gives you when you link it (Site → My own server → "1 · Sign, get the line"). Paste it right before `</body>`:
 
 ```html
-<script src="https://signal.heylogram.tv/kovanapi/ari.js" data-isim="yourname" data-imza="…" defer></script>
+<script src="https://api.heylogram.com/hive/ari.js" data-isim="yourname" data-imza="…" defer></script>
 ```
 
 The same line proves the site is yours and counts one visit per browser per day. Put it on every page that should count; a page without it is not counted. Add `db.signIn` (above) if you also want permanent bees.
@@ -68,7 +68,7 @@ The site is linked to the name by the owner's wallet signature, so one step is a
 1. The human needs a .nim name. If they have none: open Pigeon (https://pigeon.heylogram.com) in Nimiq Pay, type a name, pay (or enter a gift code such as HIVE80 for a free 5+ letter name). You cannot register or pay for them.
 2. The human signs once: open https://hive.heylogram.com/#n=<name> (Nimiq Pay, or a desktop browser with the Heylogram Wallet extension), "Is this cell yours? Sign in", Site -> My own server, type the site address (https, the origin, e.g. https://app.example.com), "1 · Sign, get the line", copy the line and give it to you. Never ask for their recovery words or private key.
 3. You: paste the line right before `</body>` in the page served at that address (index.html, or the root layout in Next.js), then deploy the way the project already deploys (git push to Vercel/Netlify, `vercel deploy`, GitHub Pages ...). Do not change the line; the signature covers the name and the exact address.
-4. Done: the first visit to the page links the cell by itself (or the human presses "2 · Link the site"). The site then shows in the hive window and opens by its name in the Webboos browser (type `<name>.nim` in the address bar; Microsoft Store: https://apps.microsoft.com/detail/9PLD8SQ416FT). Check: `GET https://signal.heylogram.tv/kovanapi/api/hive` lists the cell with `site.dis` set.
+4. Done: the first visit to the page links the cell by itself (or the human presses "2 · Link the site"). The site then shows in the hive window and opens by its name in the Webboos browser (type `<name>.nim` in the address bar; Microsoft Store: https://apps.microsoft.com/detail/9PLD8SQ416FT). Check: `GET https://api.heylogram.com/hive/api/hive` lists the cell with `site.dis` set.
 5. Optional: add `db.signIn(wallet)` from the SDK for permanent bees, and the other features in this guide.
 
 On a computer the human can use the Heylogram Wallet extension (https://chromewebstore.google.com/detail/heylogram-wallet/khfghhlakeijakdnjkdicmfplhmgoedj) for steps 1-2; it provides the same wallet interface Mini Apps use in Nimiq Pay.
