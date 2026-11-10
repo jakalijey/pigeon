@@ -33,7 +33,7 @@ Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the ri
 
 Everything happens with real NIM on Nimiq mainnet, through the Nimiq Pay wallet. The app never holds keys or funds.
 
-**Cost.** Using Pigeon is free and takes no fee on payments. Registering a name is a one-time payment (5 or more letters: 50 NIM, 4: 200, 3: 500, 2: 1000, 1: 100000), with no yearly rent; the gift code `HIVE80` gives the first 80 builders a free name until 11 November 2026.
+**Cost.** Using Pigeon is free and takes no fee on payments. Registering a name is a one-time payment (5 or more letters: 50 NIM, 4: 200, 3: 500, 2: 1000, 1: 100000), with no yearly rent; the gift code `HIVE80` is a free name for the first 80 builders, valid through 11 November 2026 (UTC).
 
 **Tokens.** Pigeon pays in NIM, which meets the Cycle III rule ("USDT, NIM, or both"). USDT by name is planned: today a Mini App needs POL for gas to send USDT on Polygon, and USDT payments in Nimiq Pay were under maintenance on 25 October 2026.
 
@@ -150,10 +150,7 @@ Pigeon keeps growing after the competition. The first three updates have dates; 
 **November 2026: Faces, languages and paying again**
 - Spanish, next to English and Turkish.
 - Profiles: a display name and a short line on every name.
-- A one-line "Pay by name" button for any website (`<nim-pay>` in the SDK).
-- Recent people: the names you paid and who paid you, one tap to pay again.
-- Look-alike warning: names that look alike (`rnando` and `mando`) show both Identicons before you pay.
-- A printable "Pay me by name" card with a QR code for every name, and a menu template for cafes and stalls in Hive.
+- A menu template for cafes and stalls in Hive.
 - Receipts: a page for every paid request, order or till sale, linked to its transaction on chain (a receipt, not an invoice).
 - A usage chart in the hive window: names, payments and distinct payers per week, gift names shown apart.
 
@@ -174,6 +171,10 @@ Pigeon keeps growing after the competition. The first three updates have dates; 
 - The open library: the [SDK](sdk/README.md) lets any Nimiq app turn `mert.nim` into an address with the same rules, log users in and pay by name.
 - Pay at the shop: the QR till in Hive (tested with a real payment on mainnet), plus shops, tips and a home for every name.
 - Hive's code is open in [`hive/`](hive/README.md), with a hive window that shows every project with its visitors and users.
+- A one-line "Pay by name" button for any website (`<nim-pay>` in the SDK).
+- Recent people: the names you paid and who paid you, one tap to pay again.
+- Look-alike warning: names that look alike (`rnando` and `mando`) show both Identicons before you pay.
+- A printable counter card for every name: the name, its Identicon and a QR code of its address.
 - Free names for builders: gift code `HIVE80`, announced on chain by the registry.
 - Public usage numbers at `/api/stats`.
 - On a computer: Mini Apps run in a desktop browser with the Heylogram Wallet extension, and names with a site open in the Webboos browser.

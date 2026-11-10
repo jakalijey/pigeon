@@ -17,7 +17,7 @@ import { lookup as dnsLookup } from 'node:dns/promises';
 
 const KOK = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 5197;
-const PIGEON = process.env.PIGEON_API || 'https://signal.heylogram.tv/pigeonapi';
+const PIGEON = process.env.PIGEON_API || 'https://api.heylogram.com/pigeon';
 const DEFTER_UYGULAMA = process.env.DEFTER_UYGULAMA || 'pigeon';   // the .nim name of the app that keeps the name registry
 // CANLI=1 (live): sample names, demo wallet, ?deneme and GitHub builds are OFF; only the real registry + uploading built files.
 const CANLI = process.env.CANLI === '1';

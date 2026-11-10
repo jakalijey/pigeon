@@ -6,14 +6,14 @@ Hive is like Vercel (site + custom domain), Firebase (database + rules, sign-in 
 
 ## Docs
 
-- [Agent guide (full API, rules, recipes)](https://signal.heylogram.tv/kovanapi/llms-full.txt): read this before writing code for a Hive app.
+- [Agent guide (full API, rules, recipes)](https://api.heylogram.com/hive/llms-full.txt): read this before writing code for a Hive app.
 - [User guide and terms](https://hive.heylogram.com/terms): the owner's panel, step by step.
 - [Privacy](https://hive.heylogram.com/privacy)
 
 ## SDK
 
-- [HiveDB](https://signal.heylogram.tv/kovanapi/hive-db.js): ES module, `import { HiveDB } from '…/hive-db.js'`.
-- [nim.js](https://signal.heylogram.tv/kovanapi/nim.js): ES module, `import { NimNames } from '…/nim.js'`.
+- [HiveDB](https://api.heylogram.com/hive/hive-db.js): ES module, `import { HiveDB } from '…/hive-db.js'`.
+- [nim.js](https://api.heylogram.com/hive/nim.js): ES module, `import { NimNames } from '…/nim.js'`.
 
 ## Example
 

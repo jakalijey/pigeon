@@ -1,7 +1,7 @@
 // Nimiq Names SDK: use .nim names in any website or Nimiq Pay mini app.
 //
 //   <script type="module">
-//     import { NimNames } from 'https://signal.heylogram.tv/kovanapi/nim.js';
+//     import { NimNames } from 'https://api.heylogram.com/hive/nim.js';
 //     const nim = NimNames({ app: 'mygame' });  // app = your own .nim name (needed only for login)
 //
 //     await nim.resolve('mando');         // { name: 'mando', address: 'NQ44 …' } or null
@@ -20,14 +20,14 @@
 //   </script>
 //
 //   A pay button with no code of your own (loading this file registers it):
-//   <script type="module" src="https://signal.heylogram.tv/kovanapi/nim.js"></script>
+//   <script type="module" src="https://api.heylogram.com/hive/nim.js"></script>
 //   <nim-pay to="mando" amount="5" note="coffee"></nim-pay>
 //
 // Names come from the Pigeon registry on the Nimiq chain. Signing and paying always happen in the user's own
 // wallet (Nimiq Pay, or a wallet that provides window.nimiq); this script never sees a key.
 
-const PIGEON = 'https://signal.heylogram.tv/pigeonapi';
-const HIVE = 'https://signal.heylogram.tv/kovanapi';
+const PIGEON = 'https://api.heylogram.com/pigeon';
+const HIVE = 'https://api.heylogram.com/hive';
 const LUNA = 1e5;
 // Same name rule as the server: starts and ends with a letter or digit, single hyphens allowed, no double hyphens
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;

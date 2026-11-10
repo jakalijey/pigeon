@@ -1,6 +1,6 @@
 // Hive DB: a Firestore-like database client for Nimiq apps, one database per .nim name.
 // Usage (browser, ES module):
-//   import { HiveDB } from 'https://signal.heylogram.tv/kovanapi/hive-db.js';
+//   import { HiveDB } from 'https://api.heylogram.com/hive/hive-db.js';
 //   const db = HiveDB('mando');                                   // the database of mando.nim
 //   await db.signIn();                                             // signs with Nimiq Pay: the player is known by their own address
 //   await db.col('players').doc(db.address).set({ nick: 'ali', gold: 5 });
@@ -14,7 +14,7 @@
 //   (await db.orders()).find((x) => x.id === o.id).status   // 'paid' once Hive sees it on chain
 //   const owner = await db.owner();                     // the name owner's wallet address (send tips here)
 // Older names still work: oyuncuGiris = signIn, ayar = settings, adres = address.
-export function HiveDB(name, { api = 'https://signal.heylogram.tv/kovanapi' } = {}) {
+export function HiveDB(name, { api = 'https://api.heylogram.com/hive' } = {}) {
   let playerKey = null; const db = { address: null, adres: null };
   const request = async (path, { method = 'GET', body } = {}) => {
     const r = await fetch(api + path, { method, body: body === undefined ? undefined : JSON.stringify(body), headers: { 'content-type': 'application/json', ...(playerKey ? { 'x-hive-oyuncu': playerKey } : {}) } });

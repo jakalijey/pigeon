@@ -16,9 +16,9 @@ Sign-in is always a wallet signature (Nimiq Pay, or any wallet that provides `wi
 ## Live instance
 
 - App: <https://hive.heylogram.com> (best opened in Nimiq Pay)
-- API: <https://signal.heylogram.tv/kovanapi>
-- Developer guide (full API, rules, recipes): <https://signal.heylogram.tv/kovanapi/llms-full.txt>, short version at `/llms.txt`
-- Browser modules: `https://signal.heylogram.tv/kovanapi/hive-db.js` (HiveDB) and `https://signal.heylogram.tv/kovanapi/nim.js` (Nimiq Names SDK)
+- API: <https://api.heylogram.com/hive>
+- Developer guide (full API, rules, recipes): <https://api.heylogram.com/hive/llms-full.txt>, short version at `/llms.txt`
+- Browser modules: `https://api.heylogram.com/hive/hive-db.js` (HiveDB) and `https://api.heylogram.com/hive/nim.js` (Nimiq Names SDK)
 
 ## Files
 
@@ -63,7 +63,7 @@ Environment variables read by the code:
 | `HOST` | `127.0.0.1` | Address to listen on |
 | `DATA_DIR` | the source folder | Where data is written (`veri.json`, `db/`, `siteler/`, `medya/`, `alan/`) |
 | `CANLI` | unset | `1` = live mode: no sample names, no demo wallet, no GitHub builds |
-| `PIGEON_API` | `https://signal.heylogram.tv/pigeonapi` | Pigeon registry API |
+| `PIGEON_API` | `https://api.heylogram.com/pigeon` | Pigeon registry API |
 | `DEFTER_UYGULAMA` | `pigeon` | The `.nim` name of the registry app |
 | `NIMIQ_CORE` | a local path | Module to import for `@nimiq/core` (use `@nimiq/core`) |
 | `IDENTICONS` | a local path | Path to the `@nimiq/identicons` browser bundle |
