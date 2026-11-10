@@ -77,6 +77,24 @@ export function oyuncuMesaji(isim) {
   oyuncuKod.set(kod, { isim, mesaj, zaman: Date.now() }); if (oyuncuKod.size > SINIR.kod) oyuncuKod.delete(oyuncuKod.keys().next().value);
   return mesaj;
 }
+// An app's OWN sign-in, forwarded by the app or its server, so the user counts as a user of that app with the one
+// signature they already gave (Lemur players were not counted in the Lemur cell). The message must carry
+// "Site: <name>.heylogram.com" (or <name>.nim) and "Time: <ms>" within 10 minutes; each signature counts once.
+const bildirilen = new Map();
+export function uygulamaGirisi(isim, mesaj, publicKey, signature) {
+  const m = String(mesaj || ''), sig = String(signature || '');
+  if (m.length > 400 || !/^[a-z0-9-]{1,32}$/.test(String(isim))) return { hata: 'mesaj' };
+  if (!new RegExp(`^Site: ${isim}\\.(heylogram\\.com|nim)$`, 'm').test(m)) return { hata: 'site_yok' };
+  const t = Number((m.match(/^Time: (\d{13})$/m) || [])[1]);
+  if (!t || Math.abs(Date.now() - t) > 10 * 60000) return { hata: 'zaman' };
+  if (!/^[0-9a-f]{128}$/i.test(sig)) return { hata: 'imza_gecersiz' };
+  if (bildirilen.has(sig.toLowerCase())) return { hata: 'tekrar' };
+  const adres = imzaDogrula(m, publicKey, sig); if (!adres) return { hata: 'imza_gecersiz' };
+  const simdi = Date.now();
+  for (const [k, z] of bildirilen) { if (simdi - z > 11 * 60000) bildirilen.delete(k); else break; }
+  bildirilen.set(sig.toLowerCase(), simdi); if (bildirilen.size > 20000) bildirilen.delete(bildirilen.keys().next().value);
+  return { adres };
+}
 export function oyuncuGiris(mesaj, publicKey, signature) {
   const kod = (String(mesaj).match(/Kod: ([0-9a-f]{16})$/) || [])[1], k = kod && oyuncuKod.get(kod);
   if (!k || Date.now() - k.zaman > 5 * 60000) return { hata: 'kod_gecersiz' };

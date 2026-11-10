@@ -203,7 +203,8 @@ export async function kovanMotoru(host, { onTik, onUzerinde } = {}) {
   // ---- interaction
   const cv = app.canvas, imlec = new Map(); let surukle = null, tasindi = false, uzerinde = null;
   const yerel = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-  cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); const p = yerel(e); imlec.set(e.pointerId, p); tasindi = false; if (imlec.size === 1) surukle = { ...p, kx: kam.hx, ky: kam.hy }; });
+  // a second finger turns the drag into a pinch (never a tap); the drag start is reset whenever the finger count changes
+  cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); const p = yerel(e); imlec.set(e.pointerId, p); if (imlec.size === 1) { tasindi = false; surukle = { ...p, kx: kam.hx, ky: kam.hy }; } else { tasindi = true; surukle = null; } });
   cv.addEventListener('pointermove', (e) => {
     const p = yerel(e);
     if (!imlec.has(e.pointerId)) { const h = bul(p.x, p.y); if (h !== uzerinde) { uzerinde = h; cv.style.cursor = h ? 'pointer' : 'grab'; onUzerinde?.(h); } return; }
@@ -213,14 +214,18 @@ export async function kovanMotoru(host, { onTik, onUzerinde } = {}) {
     if (surukle) { const dx = p.x - surukle.x, dy = p.y - surukle.y; if (Math.hypot(dx, dy) > 4) { tasindi = true; elle = true; cv.style.cursor = 'grabbing'; }
       kam.hx = kam.x = surukle.kx - dx / kam.z; kam.hy = kam.y = surukle.ky - dy / kam.z; }
   });
-  const birak = (e) => { const tek = imlec.size === 1, p = yerel(e); imlec.delete(e.pointerId); cv.style.cursor = 'grab'; if (tek && !tasindi) onTik?.(bul(p.x, p.y)); if (!imlec.size) surukle = null; };
+  // pinch over, one finger still down: drag on from where that finger is NOW and from the current camera.
+  // (It used to keep the first finger's old start and the pre-pinch camera, so the hive jumped when a finger lifted.)
+  const birak = (e) => { const tek = imlec.size === 1, p = yerel(e); imlec.delete(e.pointerId); cv.style.cursor = 'grab'; if (tek && !tasindi) onTik?.(bul(p.x, p.y));
+    if (imlec.size === 1) { const [q] = [...imlec.values()]; surukle = { ...q, kx: kam.hx, ky: kam.hy }; } else if (!imlec.size) surukle = null; };
   cv.addEventListener('pointerup', birak); cv.addEventListener('pointercancel', birak);
   cv.addEventListener('wheel', (e) => { e.preventDefault(); const p = yerel(e); yakinlas(p.x, p.y, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
   app.renderer.on('resize', () => { zemin.width = W(); zemin.height = H(); ekranDalCiz(); if (!elle) sigdir(true, !!secili); });
   ekranDalCiz();
   zemin.width = W(); zemin.height = H();
-  // stop while the tab is hidden (battery)
-  document.addEventListener('visibilitychange', () => { document.hidden ? app.ticker.stop() : app.ticker.start(); });
+  // stop while the tab is hidden (battery), and while a room covers the hive (uyut): drawing an unseen map made phones stutter
+  let uyku = false;
+  document.addEventListener('visibilitychange', () => { document.hidden || uyku ? app.ticker.stop() : app.ticker.start(); });
 
   // ---- bees: loaded by closeness (far 3, middle 12, near 60 per cell; at most 900 on screen)
   function yeniAri(x, y) { const s = new Sprite(DOKU.ari[0]); s.anchor.set(0.5); kat.ari.addChild(s); return { s, x: x + (Math.random() - 0.5) * 160, y: y - 60 - Math.random() * 80, ix: (Math.random() - 0.5) * 0.8, iy: (Math.random() - 0.5) * 0.7, ivx: 0, ivy: 0, a: Math.random() * 6.3, h: 0.7 + Math.random() * 0.6, rx: 1.05 + Math.random() * 0.5, ry: 0.85 + Math.random() * 0.4, ph: Math.random() * 6 }; }
@@ -298,5 +303,7 @@ export async function kovanMotoru(host, { onTik, onUzerinde } = {}) {
     odak(h) { kam.x = kam.hx = h.x; kam.y = kam.hy = h.y; },
     sigdir(ani, panel) { elle = false; sigdir(ani, panel); },
     ucus,
+    // a room covers the whole hive: stop drawing it (the canvas keeps its last picture); wake before the room closes
+    uyut(evet) { uyku = !!evet; if (uyku) app.ticker.stop(); else if (!document.hidden) app.ticker.start(); },
   };
 }

@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, renameSync, existsSync, statSync, mkdirSyn
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { zipAc } from './zip.mjs';
-import { demoCuzdan, girisMesaji, girisYap, oturum, imzaDogrula, kompakt, ayarMesaji, oyuncuMesaji, oyuncuGiris, oyuncu, satirKaniti } from './kimlik.mjs';
+import { demoCuzdan, girisMesaji, girisYap, oturum, imzaDogrula, kompakt, ayarMesaji, oyuncuMesaji, oyuncuGiris, uygulamaGirisi, oyuncu, satirKaniti } from './kimlik.mjs';
 import { veritabani } from './db.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, normalize, extname, sep } from 'node:path';
@@ -69,6 +69,47 @@ async function defterOku() {
   } catch (e) { defter.hata = String(e.message || e); }
 }
 await defterOku(); setInterval(defterOku, 20000);
+
+// --- our own apps' user lists, read like the Pigeon registry (Pigeon keeps the names, Lemur Blocks keeps its players).
+// UYGULAMA_LISTELERI="lemurblocks=https://…/api/hive/oyuncular,…"; each list is read with that app's own key (LISTE_ANAHTARI_<NAME>).
+// The addresses stay on this server: the public bee list shows names / short addresses only.
+const UYGULAMA_LISTELERI = String(process.env.UYGULAMA_LISTELERI || '').split(',').map((s) => s.trim().split('='))
+  .filter(([n, u]) => /^[a-z0-9-]{1,32}$/.test(n || '') && (/^https:\/\//.test(u || '') || (!CANLI && /^http:\/\/127\.0\.0\.1[:/]/.test(u || ''))));
+const uygulamaListesi = new Map();   // name -> { adresler: Map(compact address -> first seen), zaman, hata }
+async function listeleriOku() {
+  for (const [n, url] of UYGULAMA_LISTELERI) {
+    const once = uygulamaListesi.get(n);
+    try {
+      const anahtar = process.env['LISTE_ANAHTARI_' + n.toUpperCase().replace(/-/g, '_')] || '';
+      const r = await fetch(url, { headers: { 'x-hive-anahtar': anahtar }, signal: AbortSignal.timeout(8000), redirect: 'error' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      if (!Array.isArray(j?.oyuncular)) throw new Error('bicim');
+      const adresler = new Map();
+      for (const x of j.oyuncular.slice(0, 100000)) { const a = kompakt(x?.adres); if (/^NQ\d{2}[0-9A-Z]{32}$/.test(a)) adresler.set(a, Number(x.zaman) || 0); }
+      uygulamaListesi.set(n, { adresler, zaman: Date.now(), hata: null });
+    } catch (e) { uygulamaListesi.set(n, { adresler: once?.adresler || new Map(), zaman: once?.zaman || 0, hata: String(e.message || e) }); }
+  }
+}
+await listeleriOku(); setInterval(listeleriOku, 60000);
+// a cell's bees in arrival order (signed in + sub-names + the app's own list); kept 20 s so paging a big cell does not sort it on every page
+const ariSiraOnbellek = new Map();
+async function ariSirasi(n) {
+  const c = ariSiraOnbellek.get(n); if (c && Date.now() - c.zaman < 20000) return c.dizi;
+  const zaman = new Map(Object.entries(veri.kullanici?.[n] || {}).map(([a, z]) => [kompakt(a), z]));
+  for (const s of await altAdlar(n)) { const a = kompakt(s.address); if (!zaman.has(a)) zaman.set(a, s.time || 0); }
+  for (const [a, z] of uygulamaAdresleri(n)) if (!zaman.has(a)) zaman.set(a, z);
+  const dizi = [...zaman.entries()].sort((x, y) => x[1] - y[1]);
+  ariSiraOnbellek.set(n, { dizi, zaman: Date.now() }); if (ariSiraOnbellek.size > 500) ariSiraOnbellek.delete(ariSiraOnbellek.keys().next().value);
+  return dizi;
+}
+function sayacSil(n) { delete veri.ziyaret[n]; if (veri.kullanici) delete veri.kullanici[n]; ariSiraOnbellek.delete(n); kirli = true; }
+// every address an app itself reports as its user: its own list (above) and, for the registry app (Pigeon), every name owner
+function uygulamaAdresleri(n) {
+  const m = new Map(uygulamaListesi.get(n)?.adresler || []);
+  if (n === DEFTER_UYGULAMA) for (const r of defter.isimler) { const a = kompakt(r.address); if (!m.has(a)) m.set(a, r.time || 0); }
+  return m;
+}
 
 function ziyaretBugun(n) { const z = veri.ziyaret[n]; return z && z.gun === bugun() ? z.bugun : 0; }
 function depoBayt(n) { return Buffer.byteLength(JSON.stringify(veri.depo[n] || {})); }
@@ -227,10 +268,12 @@ function alanListesi(n) {
   return liste;
 }
 
-// lasting users = addresses that took a sub-name under this name + distinct addresses that came in via SDK/player sign-in (each person once)
+// lasting users = addresses that took a sub-name under this name + distinct addresses that came in via SDK/player sign-in
+// + the app's own user list (our apps, read like the Pigeon registry) — each person once
 function kullaniciSay(n, subs) {
   const k = new Set(Object.keys(veri.kullanici?.[n] || {}).map((a) => a.replace(/\s/g, '').toUpperCase()));
   for (const a of subs || []) k.add(String(a).replace(/\s/g, '').toUpperCase());
+  for (const a of uygulamaAdresleri(n).keys()) k.add(a);
   return k.size;
 }
 function petek(r) {
@@ -240,14 +283,36 @@ function petek(r) {
     site: s ? { baslik: s.baslik, yayin: s.yayin, repo: s.repo || null, adres: s.dis || (existsSync(join(SITELER, n, 'index.html')) ? (process.env.SITE_KOK || '') + '/s/' + n + '/' : null), dis: s.dis || null } : null,
     ayarSurum: veri.ayarlar?.[n]?.surum || 0,
     ziyaret: { bugun: ziyaretBugun(n), toplam: veri.ziyaret[n]?.toplam || 0 },
-    // lasting users: distinct addresses that signed in to the app; the users of the registry app (Pigeon) are the name owners
-    kullanici: n === DEFTER_UYGULAMA ? defter.isimler.length : kullaniciSay(n, r.subs),
+    // lasting users: distinct addresses; the users of the registry app (Pigeon) are the name owners (same list as its bees)
+    kullanici: kullaniciSay(n, r.subs),
     kota: { depo: depoBayt(n), depoSinir: KOTA.depoBayt, islem: islemBugun(n), islemSinir: KOTA.gunlukIslem },
     db: (({ koleksiyonlar, bayt, sayac }) => ({ koleksiyon: koleksiyonlar.length, bayt, ...sayac }))(DB.ozet(n)),
   };
 }
 
 const gercekAdlar = () => new Set(defter.isimler.map((r) => r.name));
+const ONIZLE = join(VERI_KOK, 'onizle'), onizleSuruyor = new Map();
+async function onizleSun(res, n) {
+  const pt = kovan(false, 0).petekler.find((x) => x.isim === n), adres = pt?.site?.adres;
+  if (!adres || !/^https:\/\//.test(adres)) return gonder(res, 404, { hata: 'site yok' });
+  const dosya = join(ONIZLE, n + '.png');
+  const taze = existsSync(dosya) && Date.now() - statSync(dosya).mtimeMs < 864e5;
+  if (!taze && !onizleSuruyor.has(n)) onizleSuruyor.set(n, (async () => {
+    try {
+      const j = await fetch('https://api.microlink.io/?url=' + encodeURIComponent(adres) + '&screenshot=true&meta=false&viewport.width=1280&viewport.height=800&waitFor=14000', { signal: AbortSignal.timeout(60000) }).then((r) => r.json());
+      // yalnız microlink'in kendi adresinden indir (sunucu başka bir adrese yönlendirilemesin) ve yalnız gerçek PNG/JPEG kaydet
+      const url = j?.data?.screenshot?.url; let u; try { u = new URL(url); } catch { return; }
+      if (u.protocol !== 'https:' || !/(^|\.)microlink\.io$/.test(u.hostname)) return;
+      const b = Buffer.from(await (await fetch(u, { signal: AbortSignal.timeout(30000), redirect: 'error' })).arrayBuffer());
+      const resimMi = b[0] === 0x89 && b[1] === 0x50 || b[0] === 0xff && b[1] === 0xd8;
+      if (resimMi && b.length > 100 && b.length < 5e6) { mkdirSync(ONIZLE, { recursive: true }); writeFileSync(dosya, b); }
+    } catch {} finally { onizleSuruyor.delete(n); }
+  })());
+  if (!existsSync(dosya)) { await onizleSuruyor.get(n); if (!existsSync(dosya)) return gonder(res, 404, { hata: 'hazir degil' }); }
+  const b = readFileSync(dosya);
+  res.writeHead(200, { 'content-type': b[0] === 0xff ? 'image/jpeg' : 'image/png', 'x-content-type-options': 'nosniff', 'cache-control': 'public, max-age=3600', 'access-control-allow-origin': '*' });
+  return res.end(b);
+}
 function kovan(ornekli, deneme = 0) {
   const gercek = defter.isimler.map(petek);
   // ?deneme=N: temporary fake names to see how the hive grows with N names (not saved)
@@ -355,6 +420,7 @@ async function kanitDogrula(n, url) {
 function siteBagla(n, url) {
   veri.siteler[n] = { ...(veri.siteler[n] || {}), baslik: veri.siteler[n]?.baslik || n + '.nim', yayin: Date.now(), dis: url }; kirli = true;
   rmSync(join(SITELER, n), { recursive: true, force: true });
+  if (veri.kaldirilan?.[n]) delete veri.kaldirilan[n][url];   // linked again by the owner: the page's line may keep it linked
 }
 // Linking without the "Link" button: the first visit to a page that carries the signed line links it (a coding agent can do the
 // whole job once the owner has signed). Only when the cell has no site or another external site, never over an uploaded one;
@@ -364,6 +430,7 @@ async function otoBagla(n, koken) {
   if (!/^https:\/\/[\w.-]+$/.test(koken || '')) return;
   const s = veri.siteler[n];
   if (s?.dis === koken || (s && !s.dis)) return;
+  if (veri.kaldirilan?.[n]?.[koken]) return;   // the owner removed this site: the line on that page does not bring it back (only the owner's "Link" does)
   const k = n + '|' + koken, t = Date.now();
   if (t - (otoDenenen.get(k) || 0) < 30 * 60e3) return;
   if (otoDenenen.size > 5000) otoDenenen.clear();
@@ -395,7 +462,18 @@ async function siteSun(req, res, n, yol) {
   if (!existsSync(dosya)) return gonder(res, 404, { hata: 'site yok' });
   if (dosya.endsWith('index.html') && ilkZiyaret(req, n)) { const z = veri.ziyaret[n]; if (!z || z.gun !== bugun()) veri.ziyaret[n] = { gun: bugun(), bugun: 1, toplam: (z?.toplam || 0) + 1 }; else { z.bugun++; z.toplam++; } kirli = true; }
   const tur = TIPLER[extname(dosya).toLowerCase()]; if (!tur) return gonder(res, 404, { hata: 'dosya_turu_yok' });
-  res.writeHead(200, { 'content-type': tur, 'cache-control': 'no-cache', ...KUTU }); res.end(readFileSync(dosya));
+  res.writeHead(200, { 'content-type': tur, 'cache-control': 'no-cache', ...KUTU }); res.end(dosya.endsWith('.html') ? kopruEkle(readFileSync(dosya)) : readFileSync(dosya));
+}
+
+// Nimiq Pay 2.23+ gives the wallet only to the page the mini app was opened on. A zip site opened from Hive or Pigeon
+// is shown by that page in a guest frame (heylogram.tv KodCercevesi); there window.nimiq does not exist. This small
+// script, put first into the site's index.html, gives the site a window.nimiq that asks the opening page instead.
+// It acts only inside a frame and only if the page has no wallet of its own; the user still approves everything.
+const CUZDAN_KOPRU = '<script>(function(){if(window.parent===window||window.nimiq)return;var Y=["listAccounts","getBalance","sign","sendBasicTransaction","sendBasicTransactionWithData"],B={},n=0;addEventListener("message",function(e){var v=e.data;if(e.source!==parent||!v||v.tur!=="hl-nimiq"||v.islem!=="sonuc"||!B[v.id])return;var b=B[v.id];delete B[v.id];if(v.ok)b[0](v.sonuc);else{var x=new Error(v.hata&&v.hata.mesaj||"wallet");x.code=v.hata&&v.hata.kod;b[1](x)}});var w={};Y.forEach(function(y){w[y]=function(){var a=[].slice.call(arguments,0,4),id="z"+(++n)+"-"+Date.now();return new Promise(function(ok,no){B[id]=[ok,no];parent.postMessage({tur:"hl-nimiq",islem:"cagir",id:id,yontem:y,args:a},"*")})}});window.nimiq=w})();</script>';
+const KOPRU_JS = CUZDAN_KOPRU.slice('<script>'.length, -'</script>'.length);
+function kopruEkle(html) {
+  const s = html.toString('utf8'), m = /<head[^>]*>/i.exec(s);
+  return Buffer.from(m ? s.slice(0, m.index + m[0].length) + CUZDAN_KOPRU + s.slice(m.index + m[0].length) : CUZDAN_KOPRU + s, 'utf8');
 }
 
 // per-IP per-minute counter (nginx sets X-Real-IP itself); the map is reset every minute
@@ -416,7 +494,8 @@ const sunucu = createServer(async (req, res) => {
   // rate limit on sign-in endpoints: requesting a code and sending a signature (so the code map cannot be filled to evict real users' codes, and fake users cannot be flooded in)
   if (/^\/api\/(oyuncu\/)?giris(\/|$)/.test(p) && hizAsimi(req, p.endsWith('/giris') && req.method === 'POST' ? 'imza' : 'kod')) return gonder(res, 429, { hata: 'yavas' });
   try {
-    if (p === '/healthz') return gonder(res, 200, { ok: true, canli: CANLI, isim: defter.isimler.length, hata: defter.hata });
+    if (p === '/healthz') return gonder(res, 200, { ok: true, canli: CANLI, isim: defter.isimler.length, hata: defter.hata,
+      listeler: Object.fromEntries([...uygulamaListesi].map(([n, x]) => [n, { sayi: x.adresler.size, hata: x.hata }])) });
     if (p === '/' || p === '/index.html') return gonder(res, 200, readFileSync(join(KOK, 'index.html')), tip['.html']);
     if (p === '/identicons.js') return gonder(res, 200, readFileSync(IDENTICONS), tip['.js']);
     if (p === '/qrcode.js' && existsSync(QR_YEREL)) return gonder(res, 200, 'const m={exports:{}};(function(module,exports){' + readFileSync(QR_YEREL, 'utf8') + '})(m,m.exports);export default m.exports;', tip['.js']);   // local development only (the live bundle carries the QR library inside)
@@ -425,6 +504,8 @@ const sunucu = createServer(async (req, res) => {
     if (p === '/motor.js') return gonder(res, 200, readFileSync(join(KOK, 'motor.js')), tip['.js']);
     if (p === '/pixi.mjs') { res.writeHead(200, { 'content-type': tip['.js'], 'cache-control': 'max-age=86400' }); return res.end(readFileSync(join(KOK, 'vendor', 'pixi.mjs'))); }
     if (p === '/api/hive') return gonder(res, 200, kovan(u.searchParams.get('ornek') !== '0', Number(u.searchParams.get('deneme')) || 0));
+    // sitenin ön izleme görüntüsü: günde bir kez microlink'ten alınır, diskte saklanır (ziyaretçi başına dış istek yok; ücretsiz sınır günde 50)
+    if ((m = p.match(/^\/api\/onizle\/([a-z0-9-]{1,32})$/))) return onizleSun(res, m[1]);
     if ((m = p.match(/^\/s\/([a-z0-9-]{1,32})(?:\/(.*))?$/))) return siteSun(req, res, m[1], decodeURIComponent(m[2] || ''));
     // shop-window images: /m/<name>/<file>  (public)
     if ((m = p.match(/^\/m\/([a-z0-9-]{1,32})\/([a-z0-9-]{1,40})$/)) && req.method === 'GET') {
@@ -436,6 +517,15 @@ const sunucu = createServer(async (req, res) => {
 
     // --- DATABASE (Firestore-like): /api/db/<name>[/<collection>[/<document>]]
     if ((m = p.match(/^\/api\/oyuncu\/giris\/([a-z0-9-]{1,32})$/))) { const n = m[1]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' }); return gonder(res, 200, { mesaj: oyuncuMesaji(n) }); }
+    // an app's own sign-in (same single signature), forwarded by the app or its server: counts the address as a user of that cell
+    if ((m = p.match(/^\/api\/oyuncu\/bildir\/([a-z0-9-]{1,32})$/)) && req.method === 'POST') {
+      const n = m[1]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' });
+      const b = JSON.parse(await govdeOku(req, 4000) || '{}'); const r = uygulamaGirisi(n, b.mesaj, b.publicKey, b.signature);
+      if (r.hata) return gonder(res, 400, r);
+      const k = ((veri.kullanici ||= {})[n] ||= {}), yeni = !k[r.adres];
+      if (yeni && Object.keys(k).length < 100000) { k[r.adres] = Date.now(); kirli = true; }
+      return gonder(res, 200, { tamam: true, yeni });
+    }
     if (p === '/api/oyuncu/giris' && req.method === 'POST') { const b = JSON.parse(await govdeOku(req, 4000) || '{}'); const r = oyuncuGiris(b.mesaj, b.publicKey, b.signature);
       // every distinct address that signs in is a lasting user of that app (a lasting bee in the hive); the first sign-in time is kept
       if (!r.hata) { const k = ((veri.kullanici ||= {})[r.isim] ||= {}); if (!k[r.adres] && Object.keys(k).length < 100000) { k[r.adres] = Date.now(); kirli = true; } }
@@ -563,13 +653,14 @@ const sunucu = createServer(async (req, res) => {
     }
     if ((m = p.match(/^\/api\/arilar\/([a-z0-9-]{1,32})$/)) && req.method === 'GET') {
       const n = m[1]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' });
-      const zaman = new Map(Object.entries(veri.kullanici?.[n] || {}).map(([a, z]) => [kompakt(a), z]));
-      for (const s of await altAdlar(n)) { const a = kompakt(s.address); if (!zaman.has(a)) zaman.set(a, s.time || 0); }
-      const sirali = [...zaman.entries()].sort((x, y) => x[1] - y[1]).slice(0, 100);
+      // ?adet=10&sayfa=3 gives one page (a cell may have hundreds of thousands of bees: only that page's names are looked up);
+      // without them the first 100, as before (older SDK / pages)
+      const adet = Math.min(50, Math.max(0, Math.floor(Number(u.searchParams.get('adet')) || 0))), sayfa = Math.max(1, Math.floor(Number(u.searchParams.get('sayfa')) || 1));
+      const tum = await ariSirasi(n), sirali = adet ? tum.slice((sayfa - 1) * adet, sayfa * adet) : tum.slice(0, 100);
       const arilar = [];
       for (let i = 0; i < sirali.length; i += 5) arilar.push(...await Promise.all(sirali.slice(i, i + 5).map(([a]) => ariAdi(n, a))));   // at most 5 concurrent requests to Pigeon
       // no full address in the public list: who uses this app is not exposed at address level
-      return gonder(res, 200, { toplam: zaman.size, arilar: arilar.map((x) => ({ ...x, adres: kisaAdres(x.adres) })) });
+      return gonder(res, 200, { toplam: tum.length, ...(adet ? { sayfa, adet } : {}), arilar: arilar.map((x) => ({ ...x, adres: kisaAdres(x.adres) })) });
     }
     if ((m = p.match(/^\/api\/db\/([a-z0-9-]{1,32})(?:\/([a-zA-Z0-9_-]{1,64}))?(?:\/([A-Za-z0-9_-]{1,64}))?(\/kural)?$/))) {
       let [, n, k, id, kuralYolu] = m; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' });
@@ -666,7 +757,9 @@ const sunucu = createServer(async (req, res) => {
     if (p === '/hive-db.js') { res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'access-control-allow-origin': '*', 'cache-control': 'max-age=300' }); return res.end(readFileSync(join(KOK, 'hive-db.js'))); }
     if (p === '/ari.js') {
       res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'access-control-allow-origin': '*', 'cache-control': 'max-age=300' });
-      return res.end(`(function(){var s=document.currentScript,n=s&&s.dataset.isim;if(!n)return;var k='hive-ari-'+n+'-'+new Date().toISOString().slice(0,10);try{if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}catch(e){}fetch(${JSON.stringify(process.env.API_KOK || 'http://127.0.0.1:' + PORT)}+'/api/ziyaret/'+n,{method:'POST',mode:'cors'}).catch(function(){})})();`);
+      // The bee line every linked site already carries also bridges the wallet: opened by Hive inside Nimiq Pay, the site sits
+      // in a guest frame (Pay 2.23+ gives the wallet only to the first page), so window.nimiq asks the opening page instead.
+      return res.end(KOPRU_JS + `(function(){if(window.parent!==window)try{parent.postMessage({tur:'hl-nimiq',islem:'misafir-hazir'},'*')}catch(e){}})();` + `(function(){var s=document.currentScript,n=s&&s.dataset.isim;if(!n)return;var k='hive-ari-'+n+'-'+new Date().toISOString().slice(0,10);try{if(localStorage.getItem(k))return;localStorage.setItem(k,'1')}catch(e){}fetch(${JSON.stringify(process.env.API_KOK || 'http://127.0.0.1:' + PORT)}+'/api/ziyaret/'+n,{method:'POST',mode:'cors'}).catch(function(){})})();`);
     }
     if ((m = p.match(/^\/api\/deploy\/([a-z0-9-]{1,32})$/))) {
       const n = m[1]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' });
@@ -696,6 +789,21 @@ const sunucu = createServer(async (req, res) => {
       const b = JSON.parse(await govdeOku(req, 2000) || '{}');
       veri.siteler[n] = { ...(veri.siteler[n] || {}), baslik: String(b.baslik || n + '.nim').slice(0, 60), yayin: Date.now() }; kirli = true;
       return gonder(res, 200, { ok: true });
+    }
+    // the owner removes the cell's site: the cell shows empty, the name stays. Uploaded files and the preview
+    // picture are deleted; an outside site is only unlinked (and its page's line no longer re-links it by itself)
+    if ((m = p.match(/^\/api\/site\/([a-z0-9-]{1,32})$/)) && req.method === 'DELETE') {
+      const n = m[1]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' }); if (!yetkili(req, n)) return gonder(res, 401, { hata: 'giris_gerekli' });
+      const s = veri.siteler[n]; if (!s) return gonder(res, 404, { hata: 'site_yok' });
+      if (s.dis) ((veri.kaldirilan ||= {})[n] ||= {})[s.dis] = Date.now();
+      delete veri.siteler[n]; sayacSil(n);   // the site's counters go with it (a removed site keeping its statistics looks absurd)
+      rmSync(join(SITELER, n), { recursive: true, force: true }); rmSync(join(ONIZLE, n + '.png'), { force: true });
+      return gonder(res, 200, { ok: true });
+    }
+    // the owner resets the counters: visits and the bees that came by signing in (sub-name holders stay: they are the name's, not the site's)
+    if ((m = p.match(/^\/api\/sayac\/([a-z0-9-]{1,32})$/)) && req.method === 'DELETE') {
+      const n = m[1]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' }); if (!yetkili(req, n)) return gonder(res, 401, { hata: 'giris_gerekli' });
+      sayacSil(n); return gonder(res, 200, { ok: true });
     }
     // storage: key-value per name, with QUOTA
     if ((m = p.match(/^\/api\/depo\/([a-z0-9-]{1,32})(?:\/([a-z0-9_.-]{1,64}))?$/))) {

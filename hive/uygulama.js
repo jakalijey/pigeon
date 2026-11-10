@@ -93,7 +93,11 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const kb = (b) => b < 1024 ? b + ' B' : (b / 1024).toFixed(1) + ' KB';
 function sec(h) { if (!odaAcik) { duvarCiz(); odaAc(h); } }
 function kapat() { if (odaAcik) odaKapat(); }
-addEventListener('keydown', (e) => { if (e.key === 'Escape') kapat(); });
+addEventListener('keydown', (e) => {
+  if (onayPencere) { if (e.key === 'Escape') onayKapat(false); return; }   // a question is open: only Esc (no) here
+  if (ariCam && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); const y = e.key === 'ArrowRight' ? 1 : -1; return ariSayfaYaz(ariCam.sayfa + y, y); }   // ← → turn the bee pages
+  if (e.key !== 'Escape') return; if (ariCam) return ariCamKapat(); kapat();   // Esc closes the bee window first, then the room
+});
 let bt; function bildir(s) { const b = $('bildiri'); b.textContent = s; b.classList.add('gor'); clearTimeout(bt); bt = setTimeout(() => b.classList.remove('gor'), 3000); }
 
 // ---- session: if browser storage is off (sandboxed frame) it is kept in page memory
@@ -156,8 +160,16 @@ function vitrinOku(ayar, p) {   // shop window from signed settings; without set
   const a = ayar?.ayar || {}, ham = a['vitrin.kartlar'];
   let kartlar = typeof ham === 'string' ? (ham === 'yok' ? [] : ham.split(',').map((x) => x.trim()).filter((x, i, d) => KART_TUM.includes(x) && d.indexOf(x) === i)) : ['site', 'ari'];
   if (!p.site) kartlar = kartlar.filter((k) => k !== 'site');
-  return { kartlar, vurgu: VURGU[a['vitrin.vurgu']] ? a['vitrin.vurgu'] : 'amber', tanitim: typeof a.tanitim === 'string' ? a.tanitim.slice(0, 160) : '', kapak: a['vitrin.kapak'] === 'gorsel' ? 'gorsel' : 'canli' };
+  return { kartlar, vurgu: VURGU[a['vitrin.vurgu']] ? a['vitrin.vurgu'] : 'amber', tanitim: typeof a.tanitim === 'string' ? a.tanitim.slice(0, 160) : '', kapak: a['vitrin.kapak'] === 'gorsel' ? 'gorsel' : 'canli',
+    isimler: a['vitrin.arilar'] !== 'gizli' };   // the owner may keep the bee names off this page; the counts always show
 }
+// the "N bees" hexagon opens / closes the names list; closed at first (a long list crowds a phone screen)
+// up to ten names open right under it; more than ten open in a glass window, ten per page (a cell may have hundreds of thousands)
+const ARI_SAYFA = 10;
+const ariDugmeNit = (p, acik) => p.kullanici > ARI_SAYFA ? 'aria-haspopup="dialog"' : `aria-controls="ariL" aria-expanded="${acik}"`;
+const ariAltigen = (p, isimler, etiket, acik = false) => isimler && p.kullanici > 0
+  ? `<div class="ari-ac" role="button" tabindex="0" ${ariDugmeNit(p, acik)}><b>${sayiYaz(p.kullanici)}</b><small>${etiket}</small></div>`
+  : `<div><b>${sayiYaz(p.kullanici || 0)}</b><small>${etiket}</small></div>`;
 // shop-window image: its address if uploaded (with version, so the cache refreshes), else null
 const gorsel = (p, ad) => { const g = (odaDurum?.medya || []).find((x) => x.ad === ad); return g ? `${API}/m/${p.isim}/${ad}?v=${g.zaman}` : null; };
 
@@ -188,7 +200,7 @@ async function odaCiz(yeni) {
   const h = secili, p = h.p, sahipMi = !!OT(p.isim) || (YEREL && new URLSearchParams(location.search).get('onizle') === 'sahip');
   const ayar = await fetch(API + '/api/ayar/' + p.isim).then((r) => r.json()).catch(() => ({}));
   const v = vitrinOku(ayar, p), sahip = sahipMi && !ziyaretciGozu;
-  if (ziyaretciGozu && gozOnizleme) { Object.assign(v, { kartlar: gozOnizleme.kartlar.filter((k) => k !== 'site' || p.site), vurgu: gozOnizleme.vurgu, tanitim: gozOnizleme.tanitim, kapak: gozOnizleme.kapak || v.kapak }); }
+  if (ziyaretciGozu && gozOnizleme) { Object.assign(v, { kartlar: gozOnizleme.kartlar.filter((k) => k !== 'site' || p.site), vurgu: gozOnizleme.vurgu, tanitim: gozOnizleme.tanitim, kapak: gozOnizleme.kapak || v.kapak, isimler: gozOnizleme.isimler ?? v.isimler }); }
   const [medya, urunler] = await Promise.all([
     fetch(API + '/api/medya/' + p.isim).then((r) => r.json()).then((j) => j.gorseller || []).catch(() => []),
     fetch(API + '/api/urunler/' + p.isim).then((r) => r.json()).then((j) => j.urunler || []).catch(() => [])]);
@@ -227,7 +239,12 @@ async function odaCiz(yeni) {
     odaCiz.satirEkle = satirEkle; }
   if ($('konsol')) { konsol.k = null; konsol.b = null; konsolCiz(); }
   if ($('gd')) gorunumBagla(odaDurum);
-  if ($('ariL')) arilariYaz(p.isim);
+  if ($('bahsisNim')) {   // the tip amount: the send button shows it, the quick pick that matches lights up, the field grows with the number
+    const i = $('bahsisNim'), yaz = () => { const v = bahsisTutar(i.value); $('bahsisYazi').textContent = v ? sayiYaz(v) + ' NIM' : '–';
+      i.style.width = Math.max(2, i.value.length + 0.6) + 'ch'; $('odaIc').querySelectorAll('.bt-hizli button').forEach((b) => b.classList.toggle('sec', Number(b.dataset.nim) === v)); };
+    i.oninput = yaz; i.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); islem('bahsisGonder', i); } }; yaz();
+  }
+  if ($('ariL')) { if (!$('ariL').hidden) arilariYaz(p.isim); const dug = $('odaIc').querySelector('.ari-ac'); if (dug) ariAcBagla(dug, p); }
   if ($('alanListe')) alanlariYaz(p);
   if ($('odemeK')) odemeBagla(p);
   // content arrives in order
@@ -241,7 +258,7 @@ let kavanozNo = 0;
 function kasaDoldur({ h, p, bakiye }) {
   if (!$('bak')) return;
   const kavanoz = (eski, yeni, gecikme) => { const bas = performance.now() + gecikme, no = ++kavanozNo;
-    const f = (z) => { if (no !== kavanozNo) return; const j = eio(Math.max(0, Math.min(1, (z - bas) / 1100))), deger = eski + (yeni - eski) * j, y0 = 114 - 84 * Math.min(0.92, deger / 500); const by = $('balY'); if (!by) return;
+    const f = (z) => { if (no !== kavanozNo) return; const j = eio(Math.max(0, Math.min(1, (z - bas) / 1100))), deger = eski + (yeni - eski) * j, y0 = 114 - 84 * Math.min(0.92, Math.log10(1 + Math.max(0, deger)) / Math.log10(501));   // log scale: 2 NIM already shows honey, full at 500 const by = $('balY'); if (!by) return;
       by.setAttribute('y', y0.toFixed(1)); $('balUst').setAttribute('d', `M0 ${y0.toFixed(1)} q24 -6 48 0 t48 0 v8 h-96z`); $('bak').innerHTML = `${sayiYaz(deger)} <span>NIM</span>`; if (j < 1) requestAnimationFrame(f); };
     requestAnimationFrame(f); };
   if (bakiye == null) { $('bak').innerHTML = '– <span>NIM</span>'; return; }
@@ -253,6 +270,10 @@ function kasaDoldur({ h, p, bakiye }) {
     kavanoz(bakiye, toplam, 0);
     const pay = $('bakPay'); if (pay) pay.textContent = sayiYaz(toplam - bakiye);
     const ana = $('bakCuz'); if (ana) ana.textContent = sayiYaz(bakiye);
+    // a Nimiq Pay owner: the name's address is Pay's top-up address; Pay pays from the vault and moves top-up money there at its threshold
+    const cn = $('bakCuzNot'), pn = $('bakPayNot');
+    if (cn) cn.textContent = L('ismine gelen; Pay eşiğe (varsayılan 5 NIM) ulaşınca kasaya aktarır', 'arrived to your name; Pay moves it to the vault at its threshold (5 NIM by default)');
+    if (pn) pn.textContent = L("Pay'de harcanabilir", 'spendable in Pay');
   }).catch(() => {});
   kasaSor(0);
 }
@@ -302,16 +323,16 @@ function disYuz({ p, v, yeni }) {
   const ks = v.kartlar, site = ks.includes('site') ? p.site : null, gun = p.zaman ? Math.max(1, Math.ceil((Date.now() - p.zaman) / 864e5)) : null;
   const BUYUK = {
     site: () => !site ? '' : `<div class="a-cerceve"><div class="a-cam"><div class="a-bar"><i></i><i></i><i></i><span>${esc(siteGoster(site.adres))}</span></div>
-      ${v.kapak === 'gorsel' && gorsel(p, 'kapak') ? `<img class="a-kapak" src="${esc(gorsel(p, 'kapak'))}" alt="" />` : ''}<div class="a-onsite ${v.kapak === 'gorsel' && gorsel(p, 'kapak') ? 'kapakli' : ''}"><b>${esc(site.baslik || p.isim + '.nim')}</b><span>${esc(siteGoster(site.adres))}</span><a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener">${L('Siteyi aç', 'Open site')}</a></div></div>
+      ${v.kapak === 'gorsel' && gorsel(p, 'kapak') ? `<img class="a-kapak" src="${esc(gorsel(p, 'kapak'))}" alt="" />` : /^https:\/\//.test(siteAdres(site.adres)) ? `<img class="a-onizle" src="https://signal.heylogram.tv/kovanapi/api/onizle/${encodeURIComponent(p.isim)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />` : ''}<div class="a-onsite ${v.kapak === 'gorsel' && gorsel(p, 'kapak') ? 'kapakli' : /^https:\/\//.test(siteAdres(site.adres)) ? 'kapakli canli' : ''}"><b>${esc(site.baslik || p.isim + '.nim')}</b><span>${esc(siteGoster(site.adres))}</span><a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener" data-hl-misafir="1">${L('Siteyi aç', 'Open site')}</a></div></div>
       ${site.yayin ? `<span class="a-etiket">${L('Güncellendi: ', 'Updated: ')}${gunOnce(site.yayin)}</span>` : ''}</div>`,
-    ari: () => `<div class="a-sahne-ari"><div class="a-petekler">${Array.from({ length: Math.max(7, Math.min(28, ariSayi(p))) }, (_, k) => `<i class="${k < (p.kullanici || 0) ? 'dolu' : k < ariSayi(p) ? 'soluk' : ''}" style="--d:${k * 35}ms"></i>`).join('')}</div>
-      <div class="a-sahne-alt"><b>${p.kullanici || 0}</b> ${L('arı bu peteğe bağlı', 'bees belong to this cell')} · <b>${p.ziyaret?.bugun || 0}</b> ${L('bugün uğradı', 'came by today')}</div><div class="ariL" id="ariL"></div></div>`,
-    urun: () => `<div class="a-sahne-urun"><div class="a-urunler">${urunKartlari(p, 99)}</div>${site?.adres ? `<a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener">${L('Satın almak için siteye git', 'Go to the site to buy')}</a>` : ''}</div>`,
+    // the same three hexagons as everywhere (the old strip of small cells looked like another counter)
+    ari: () => `<div class="a-sahne-ari">${KUCUK.ari()}</div>`,
+    urun: () => `<div class="a-sahne-urun"><div class="a-urunler">${urunKartlari(p, 99)}</div>${site?.adres ? `<a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener" data-hl-misafir="1">${L('Satın almak için siteye git', 'Go to the site to buy')}</a>` : ''}</div>`,
     kasa: () => `<div class="a-sahne-kasa">${jar(0)}<div><b id="bak">– <span>NIM</span></b><small>${L('Sahibi kasasını herkese açtı. Para Hive\'da durmaz; kavanoz sahibinin kendi cüzdanı.', 'The owner made the vault public. Hive never holds money; the jar is the owner\'s own wallet.')}</small></div></div>`,
   };
   const KUCUK = {
     site: () => '',
-    ari: () => `<div class="a-muhur"><div><b>${p.kullanici || 0}</b><small>${L('arı', 'bees')}</small></div><div><b>${p.ziyaret?.bugun || 0}</b><small>${L('bugün', 'today')}</small></div><div><b>${sayiYaz(p.ziyaret?.toplam || 0)}</b><small>${L('ziyaret', 'visits')}</small></div></div><div class="ariL" id="ariL"></div>`,
+    ari: () => `<div class="a-muhur">${ariAltigen(p, v.isimler, L('arı', 'bees'))}<div><b>${p.ziyaret?.bugun || 0}</b><small>${L('bugün', 'today')}</small></div><div><b>${sayiYaz(p.ziyaret?.toplam || 0)}</b><small>${L('ziyaret', 'visits')}</small></div></div>${v.isimler ? '<div class="ariL" id="ariL" hidden></div>' : ''}`,
     urun: () => `<div class="a-urunler kucuk">${urunKartlari(p, 3)}</div>`,
     kasa: () => `<div class="a-kasa-kucuk">${jar(0)}<div><b id="bak">– <span>NIM</span></b><small>${L('Sahibi kasasını herkese açtı', 'The owner made the vault public')}</small></div></div>`,
   };
@@ -321,8 +342,12 @@ function disYuz({ p, v, yeni }) {
       <h1 class="a-ad">${esc(p.isim)}<em>.nim</em></h1>
       <div class="a-alt">${site ? `<span><i></i>${L('Site yayında', 'Site is live')}</span>` : ''}${gun ? `<span>${L('Kovanda ', 'In the hive for ')}${gun}${L(' gündür', gun === 1 ? ' day' : ' days')}</span>` : ''}</div>
       ${yeni ? `<p class="a-tanitim">${L('Petek balmumundan yeni doğdu. İlk arı sensin. Peteğine girmek için cüzdanınla imza at.', 'Your cell was just born from wax. You are its first bee. Sign with your wallet to step inside.')}</p>` : v.tanitim ? `<p class="a-tanitim">${esc(v.tanitim)}</p>` : ''}
-      <div class="a-eylem">${site?.adres ? `<a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener">${L('Siteyi aç', 'Open site')}</a>` : ''}${yeni ? `<button class="a-btn ana" data-is="giris">${L('Cüzdanla gir', 'Sign in with wallet')}</button>` : ''}<button class="a-btn ikinci" data-is="paylas">${L('Paylaş', 'Share')}</button>${p.ornek ? '' : `<button class="a-btn ikinci" data-is="bahsis">${L('Bahşiş', 'Tip')}</button>`}</div>
-      <div class="a-bahsis" id="bahsisKutu" hidden><span>${L('Ne kadar?', 'How much?')}</span>${[1, 5, 10].map((v) => `<button class="a-btn ikinci" data-is="bahsisGonder" data-nim="${v}">${v} NIM</button>`).join('')}<small>${L('Para doğrudan bu ismin sahibine gider; Hive aracı değildir.', 'The money goes straight to this name\'s owner; Hive is not in between.')}</small></div>
+      <div class="a-eylem">${site?.adres ? `<a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener" data-hl-misafir="1">${L('Siteyi aç', 'Open site')}</a>` : ''}${yeni ? `<button class="a-btn ana" data-is="giris">${L('Cüzdanla gir', 'Sign in with wallet')}</button>` : ''}<button class="a-btn ikinci" data-is="paylas">${L('Paylaş', 'Share')}</button>${p.ornek ? '' : `<button class="a-btn ikinci" data-is="bahsis">${L('Bahşiş', 'Tip')}</button>`}</div>
+      <div class="a-bahsis" id="bahsisKutu" hidden>
+        <div class="bt-sat"><button type="button" class="bt-yuvar" data-is="bahsisAyar" data-y="-1" aria-label="${L('Azalt', 'Less')}">−</button><label class="bt-alan"><input id="bahsisNim" inputmode="decimal" autocomplete="off" value="1" aria-label="${L('Bahşiş tutarı (NIM)', 'Tip amount (NIM)')}" /><span>NIM</span></label><button type="button" class="bt-yuvar" data-is="bahsisAyar" data-y="1" aria-label="${L('Artır', 'More')}">+</button></div>
+        <div class="bt-hizli">${[1, 5, 10, 25].map((v) => `<button type="button" data-is="bahsisAyar" data-nim="${v}">${v}</button>`).join('')}</div>
+        <button type="button" class="a-btn ana bt-gonder" data-is="bahsisGonder">${L('Gönder', 'Send')} · <b id="bahsisYazi">1 NIM</b></button>
+        <small>${L('Para doğrudan bu ismin sahibine gider; Hive aracı değildir.', 'The money goes straight to this name\'s owner; Hive is not in between.')}</small></div>
       ${ks.slice(1).map((k) => KUCUK[k]()).join('')}
     </div>
     ${ks.length ? `<div class="a-sahne a-gel">${BUYUK[ks[0]]()}</div>` : ''}
@@ -336,18 +361,22 @@ function icYuz(d) {
   if (!SEKMELER().some(([k]) => k === odaSekme)) odaSekme = 'genel';
   const kasaGorunur = v.kartlar.includes('kasa');
   const kKasa = (s) => `<div class="a-kart ${s} a-gel"><h3>${L('Kasa · senin cüzdanın', 'Vault · your wallet')}<span class="sag">${L('para bizde durmaz', 'we never hold money')}</span></h3>
-    <div class="a-kasa-ic">${jar(0)}<div><div class="a-bak" id="bak">– <span>NIM</span></div><div class="a-dok"><span>${L('Cüzdan', 'Wallet')} <b id="bakCuz">${d.bakiye == null ? '–' : sayiYaz(d.bakiye)}</b></span><span>${L('Nimiq Pay kasası', 'Nimiq Pay vault')} <b id="bakPay">0</b></span></div></div></div>
+    <div class="a-kasa-ic">${jar(0)}<div><div class="a-bak" id="bak">– <span>NIM</span></div><div class="a-dok"><span>${L('Cüzdan', 'Wallet')} <b id="bakCuz">${d.bakiye == null ? '–' : sayiYaz(d.bakiye)}</b> <small id="bakCuzNot">${L('gönderilebilir', 'spendable')}</small></span><span>${L('Nimiq Pay kasası', 'Nimiq Pay vault')} <b id="bakPay">0</b> <small id="bakPayNot"></small></span><span class="a-kav">${L('Kavanoz 500 NIM\'de dolar', 'The jar is full at 500 NIM')}</span></div></div></div>
     <div class="a-gorunur"><div><b>${L('Ziyaretçiler kasamı görsün', 'Visitors can see my vault')}: ${kasaGorunur ? L('açık', 'on') : L('kapalı', 'off')}</b><small>${kasaGorunur ? L('Vitrinde kavanoz ve bakiye görünüyor.', 'The jar and balance show on your page.') : L('Kasan yalnız sana görünür.', 'Only you can see your vault.')}</small></div><button class="a-btn ikinci" data-is="sekme" data-sekme="gorunum">${L('Görünüm’de değiştir', 'Change in My page')}</button></div>
 </div>`;
   const site = p.site;
   const kSite = (s) => `<div class="a-kart ${s} site-k a-gel" data-secim="${site?.dis ? 'sunucu' : 'yukle'}"><h3>${L('Site', 'Site')}</h3>
-    ${site ? `<div class="a-site-durum"><i></i><span>${esc(siteGoster(site.adres))}</span><small>${L('yayında', 'live')}${site.yayin ? ' · ' + gunOnce(site.yayin) : ''}</small><a href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener">${L('Aç', 'Open')}</a></div>` : `<div class="a-site-durum bos"><i></i><span>${L('Henüz site yok', 'No site yet')}</span><small>${L('yayınlayınca petek bal ile dolar', 'publish and the cell fills with honey')}</small></div>`}
+    ${site ? `<div class="a-site-durum"><i></i><span>${esc(siteGoster(site.adres))}</span><small>${L('yayında', 'live')}${site.yayin ? ' · ' + gunOnce(site.yayin) : ''}</small><a href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener" data-hl-misafir="1">${L('Aç', 'Open')}</a></div>
+      <button type="button" class="a-site-kaldir" data-is="siteKaldir">${L('Siteyi kaldır', 'Remove site')}</button>` : `<div class="a-site-durum bos"><i></i><span>${L('Henüz site yok', 'No site yet')}</span><small>${L('yayınlayınca petek bal ile dolar', 'publish and the cell fills with honey')}</small></div>
+      ${p.kullanici || p.ziyaret?.toplam ? `<div class="a-kalan"><span>${L('Kalan sayaçlar', 'Counters left')}: ${sayiYaz(p.kullanici || 0)} ${L('arı', 'bees')} · ${sayiYaz(p.ziyaret?.toplam || 0)} ${L('ziyaret', 'visits')}</span><button type="button" class="a-site-kaldir" data-is="sayacSifirla">${L('Sayaçları sıfırla', 'Reset the counters')}</button></div>` : ''}`}
     <div class="a-yol"><div class="secenek ${site?.dis ? '' : 'sec'}" data-yol="yukle"><b>${L('Dosya yükle', 'Upload files')}</b><small>${L('Derlenmiş siteni .zip olarak bırak; birkaç saniyede yayında.', 'Drop your built site as a .zip; live in seconds.')}</small></div>
       <div class="secenek ${site?.dis ? 'sec' : ''}" data-yol="sunucu"><b>${L('Kendi sunucum', 'My own server')}</b><small>${L('Tek satırı sayfana yapıştır, bağla. Her ziyaretçi kovanda arı olur.', 'Paste one line into your page and link it. Every visitor becomes a bee.')}</small></div></div>
     <div class="yol-yukle">${canli ? `<label class="giris-kutu dosyaSec a-birak"><input id="zip" type="file" accept=".zip,application/zip" hidden /><b>${L('Dosya seç', 'Choose file')}</b><span id="zipAd">${L('Seçilmedi (.zip)', 'None chosen (.zip)')}</span></label>
       <div class="dug" data-is="zip">${L('Derlenmiş siteyi yükle (.zip)', 'Upload built site (.zip)')}</div><div class="zipIlerleme" id="zipIlerleme" hidden><i></i><span></span></div>` : `<input id="repo" placeholder="https://github.com/user/repo" value="${esc(site?.repo || '')}" class="giris-kutu" />
       <input id="api" placeholder="${L('dış API (isteğe bağlı)', 'external API (optional)')}" class="giris-kutu" /><div class="dug" data-is="deploy">${L('GitHub\'dan yayınla', 'Publish from GitHub')}</div><div class="depo" id="dgun"></div>`}
-      <div class="a-masaustu"><b>${L('Zip yüklemek telefonda zor', 'Uploading a zip is hard on a phone')}</b>${L('Bilgisayarda hive.heylogram.com\'u aç, peteğine gir; kaldığın yerden devam et.', 'Open hive.heylogram.com on a computer, sign in to your cell and carry on.')}<div class="iki"><button data-is="linkGonder">${L('Bağlantıyı bana gönder', 'Send me the link')}</button><button data-is="linkKopya">${L('Kopyala', 'Copy')}</button></div></div></div>
+      <div class="a-masaustu"><b>${L('Zip yüklemek telefonda zor', 'Uploading a zip is hard on a phone')}</b>${L('Bilgisayarda hive.heylogram.com\'u aç, peteğine gir; kaldığın yerden devam et.', 'Open hive.heylogram.com on a computer, sign in to your cell and carry on.')}${navigator.share   // the phone's share menu (send it to yourself) exists only in some browsers; Nimiq Pay has none, there one "Copy" is enough
+        ? `<div class="iki"><button data-is="linkGonder">${L('Bağlantıyı bana gönder', 'Send me the link')}</button><button data-is="linkKopya">${L('Kopyala', 'Copy')}</button></div>`
+        : `<div class="iki tek"><button data-is="linkKopya">${L('Bağlantıyı kopyala', 'Copy the link')}</button></div>`}</div></div>
     <div class="yol-sunucu"><input id="disUrl" placeholder="https://my-site.com" value="${esc(site?.dis || sonKanit[p.isim] || '')}" class="giris-kutu" />
       <div class="iki"><div class="dug ikinci" data-is="kanit">${L('1 · İmzala, satırı al', '1 · Sign, get the line')}</div><div class="dug" data-is="bagla">${L('2 · Siteyi bağla', '2 · Link the site')}</div></div><div id="kanit"></div>
       <div class="not">${L('Satırı sitenin index.html dosyasında &lt;/body&gt; satırının hemen üstüne koy, siteyi yayınla, ilk ziyarette petek kendiliğinden bağlanır (beklemek istemezsen 2 · Siteyi bağla). Satırdaki imza sitenin senin olduğunu gösterir, her ziyaretçiyi de kovanda arı yapar.', 'Put the line right above &lt;/body&gt; in your site\'s index.html and publish: the cell links itself at the first visit (or press 2 · Link). The signature in the line proves the site is yours and turns every visitor into a bee.')}</div></div>
@@ -377,8 +406,10 @@ function icYuz(d) {
     <div class="not">${L('Uygulaman bu anahtarları okur. Kaydı yalnız sen imzalarsın; imzasız değişiklik geçmez. "tanitim" vitrindeki kısa yazıdır. İmza para göndermez.', 'Your app reads these keys. Only you sign a save; unsigned changes are refused. "tanitim" is the short text on your page. Signing sends no money.')}</div></div>`;
   const kGorunum = (s) => `<div class="a-kart ${s} a-gel">${gorunumHtml(v, d)}</div>`;
   const kAri = (s) => `<div class="a-kart ${s} a-gel"><h3>${L('Arılar', 'Bees')}<span class="sag">${p.kullanici || 0} · ${p.ziyaret?.bugun || 0} ${L('bugün', 'today')}</span></h3>
-    <div class="a-muhur"><div><b>${p.kullanici || 0}</b><small>${L('kalıcı arı', 'bees')}</small></div><div><b>${p.ziyaret?.bugun || 0}</b><small>${L('bugün', 'today')}</small></div><div><b>${sayiYaz(p.ziyaret?.toplam || 0)}</b><small>${L('toplam ziyaret', 'total visits')}</small></div></div>
+    <div class="a-muhur">${ariAltigen(p, true, L('kalıcı arı', 'bees'), true)}<div><b>${p.ziyaret?.bugun || 0}</b><small>${L('bugün', 'today')}</small></div><div><b>${sayiYaz(p.ziyaret?.toplam || 0)}</b><small>${L('toplam ziyaret', 'total visits')}</small></div></div>
     <div class="ariL" id="ariL"></div>
+    ${v.isimler ? '' : `<div class="not">${L('Arı isimleri ziyaretçilere kapalı; Görünüm\'den açabilirsin. Sayılar yine görünür.', 'Bee names are hidden from visitors; turn them on in My page. The counts still show.')}</div>`}
+    ${p.kullanici || p.ziyaret?.toplam ? `<button type="button" class="a-site-kaldir" data-is="sayacSifirla">${L('Sayaçları sıfırla', 'Reset the counters')}</button>` : ''}
     <div class="not">${L('Arı = imzayla giren kullanıcı ya da alt isim sahibi; kaybolmaz. Soluk arı = bugün uğrayan ziyaretçi. Kendi sitende tek satır varsa her ziyaretçi sayılır (aynı kişi günde bir kez).', 'Bee = a user who signed in or owns a sub-name; never disappears. Faint bee = a visitor today. With the one line on your own site every visitor counts (once a day per person).')}</div></div>`;
   const pano = {
     genel: (yeni ? `<div class="a-kart s12 a-gel"><h3>${L('İlk adımlar', 'First steps')}</h3><div class="ilk"><div class="tamam"><i>1</i>${L('İsim senin: ', 'The name is yours: ')}${esc(p.isim)}.nim</div><div><i>2</i>${L('Siteni yayınla: peteğe bal dolsun', 'Publish your site: fill the cell with honey')}</div><div><i>3</i>${L('Alt isim aç: arılar gelsin', 'Open sub-names: let the bees come')}</div></div></div>` : '')
@@ -400,6 +431,7 @@ function gorunumHtml(v, d) {
   return `<div class="gd" id="gd"><div class="gd-bas"><b>${L('Görünümün', 'Your page')}</b><small>${L('Ziyaretçi ne görsün, hangi sırayla, sen seç.', 'Choose what visitors see, and in what order.')}</small></div>
     <div class="gd-govde"><div class="gd-sol">
       <div class="gd-liste">${tum.map((k) => `<div class="gd-sat" data-k="${k}"><span class="gd-ok"><button data-y="-1" aria-label="${L('yukarı', 'up')}">&#9650;</button><button data-y="1" aria-label="${L('aşağı', 'down')}">&#9660;</button></span><div><b>${KART_ADI()[k]}</b><small>${ACIKLAMA()[k]}${k === 'site' && !secili?.p.site ? ' · ' + L('henüz site yok', 'no site yet') : ''}${k === 'urun' && !d.urunler?.length ? ' · ' + L('Ayarlar\'da "urunler" ekleyince görünür', 'shows once you add "urunler" in Settings') : ''}</small></div><button class="gd-sw ${v.kartlar.includes(k) ? 'acik' : ''}" aria-label="${KART_ADI()[k]}"></button></div>`).join('')}</div>
+      <div class="gd-sat gd-isim"><div><b>${L('Arı isimleri', 'Bee names')}</b><small>${L('Ziyaretçi arı sayısına dokununca kullanıcılarının isimleri açılsın. Kapalıyken yalnız sayılar görünür.', 'Visitors tap the bee count to see your users\' names. When off, only the counts show.')}</small></div><button class="gd-sw ${v.isimler ? 'acik' : ''}" data-isimler aria-label="${L('Arı isimleri', 'Bee names')}"></button></div>
       <label class="gd-et">${L('Kısa tanıtım', 'Short intro')} <small class="gd-say"></small></label><textarea class="gd-yazi" maxlength="160" rows="2" placeholder="${L('Peteğini bir cümleyle anlat', 'Describe your cell in one sentence')}">${esc(v.tanitim)}</textarea>
       <div class="gd-et">${L('Vurgu rengi', 'Accent colour')}</div><div class="gd-renk">${Object.entries(VURGU).map(([k, [c]]) => `<button data-v="${k}" style="--c:${c}" class="${k === v.vurgu ? 'sec' : ''}" aria-label="${k}"></button>`).join('')}</div>
       <div class="gd-et">${L('Site önizlemesi', 'Site preview')}</div>
@@ -412,14 +444,137 @@ function gorunumHtml(v, d) {
 }
 // The cell's bees with names: their own .nim name or this cell's sub-name (the player's choice). Sub-names do not become cells
 // on the hive map; they appear only here. Display rule: the person's own name large, the parent name small (mert · lale.garura.nim).
+// The names under the hexagon: the first page only (ten); if there are more, "See all" opens the glass window.
+const ariAdYaz = (g) => { const m = String(g).match(/^([^.]+)(\..+)$/); return m ? `<b>${esc(m[1])}</b><small>${esc(m[2])}</small>` : `<b>${esc(g)}</b>`; };
+const ariCipYaz = (liste) => liste.map((a) => `<span class="ariAd" title="${esc(a.adres)}">${ariAdYaz(a.gorunen)}</span>`).join('');
 async function arilariYaz(isim) {
   const el = $('ariL'); if (!el) return;
-  const j = await fetch(API + '/api/arilar/' + isim).then((r) => r.json()).catch(() => null);
-  if (!el.isConnected || !j?.arilar) return;
+  el.dataset.yuklendi = '1';
+  const j = await fetch(`${API}/api/arilar/${isim}?adet=${ARI_SAYFA}&sayfa=1`).then((r) => r.json()).catch(() => null);
+  if (!el.isConnected) return;
+  if (!j?.arilar) { delete el.dataset.yuklendi; return; }
   if (!j.arilar.length) { el.innerHTML = `<div class="not">${L('Henüz adı görünen arı yok.', 'No named bees yet.')}</div>`; return; }
-  const adYaz = (g) => { const m = String(g).match(/^([^.]+)(\..+)$/); return m ? `<b>${esc(m[1])}</b><small>${esc(m[2])}</small>` : `<b>${esc(g)}</b>`; };
-  el.innerHTML = j.arilar.map((a) => `<span class="ariAd" title="${esc(a.adres)}">${adYaz(a.gorunen)}</span>`).join('')
-    + (j.toplam > j.arilar.length ? `<span class="ariAd daha">+${j.toplam - j.arilar.length}</span>` : '');
+  el.innerHTML = ariCipYaz(j.arilar.slice(0, ARI_SAYFA))
+    + (j.toplam > ARI_SAYFA ? `<button type="button" class="ariAd devam">${L('Tümünü gör', 'See all')} · ${sayiYaz(j.toplam)}</button>` : '');
+  const d = el.querySelector('.devam'); if (d) d.onclick = () => { if (secili?.p.isim === isim) ariCamAc(secili.p); };
+}
+function ariAcBagla(dug, p) {
+  const degis = () => {
+    if ((p.kullanici || 0) > ARI_SAYFA) return ariCamAc(p);   // many bees: the glass window, ten per page
+    const l = $('ariL'); if (!l) return; const ac = l.hidden;
+    l.hidden = !ac; dug.setAttribute('aria-expanded', String(ac));
+    if (ac && !l.dataset.yuklendi) arilariYaz(p.isim);
+  };
+  dug.onclick = (e) => { e.preventDefault(); degis(); };
+  dug.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); degis(); } };
+}
+// The glass window: the frame of the site preview, ten names a page; only the shown page is asked from the server.
+// The phone's back button closes it first (it has its own history step), then the room.
+let ariCam = null, ariGeriYut = false;
+function ariCamAc(p) {
+  ariCamKapat(true);
+  const toplam = p.kullanici || 0, perde = document.createElement('div');
+  perde.className = 'ari-perde'; perde.setAttribute('role', 'dialog'); perde.setAttribute('aria-modal', 'true'); perde.setAttribute('aria-labelledby', 'ariCamBas');
+  perde.innerHTML = `<div class="a-cerceve ari-cerceve"><div class="a-cam ari-cam"><div class="a-bar"><i></i><i></i><i></i><span id="ariCamBas">${esc(p.isim)}.nim · ${sayiYaz(toplam)} ${L('arı', 'bees')}</span><button type="button" class="ari-kapat" aria-label="${L('Kapat', 'Close')}">×</button></div>
+    <div class="ari-cam-govde"><div class="ariL ari-sayfa"></div><div class="ari-gez"><button type="button" data-y="-1" aria-label="${L('Önceki sayfa', 'Previous page')}">‹</button><span class="ari-no"></span><button type="button" data-y="1" aria-label="${L('Sonraki sayfa', 'Next page')}">›</button></div></div></div></div>`;
+  $('oda').appendChild(perde);
+  ariCam = { p, sayfa: 1, sayfaSayisi: Math.max(1, Math.ceil(toplam / ARI_SAYFA)), perde, onbellek: new Map() };
+  history.pushState?.({ ...(history.state || {}), ariCam: 1 }, '');
+  perde.onclick = (e) => { if (e.target === perde) ariCamKapat(); };
+  perde.querySelector('.ari-kapat').onclick = () => ariCamKapat();
+  perde.querySelectorAll('.ari-gez button').forEach((b) => (b.onclick = () => ariSayfaYaz(ariCam.sayfa + Number(b.dataset.y), Number(b.dataset.y))));
+  ariKaydirBagla(perde);
+  perde.querySelector('.ari-kapat').focus({ preventScroll: true });
+  ariSayfaYaz(1);
+}
+// one page from the server; the next page is fetched ahead, so turning feels instant (a failed fetch is tried again next time)
+const ariSayfaGetir = (d, n) => {
+  if (n < 1 || n > d.sayfaSayisi) return null;
+  if (!d.onbellek.has(n)) d.onbellek.set(n, fetch(`${API}/api/arilar/${d.p.isim}?adet=${ARI_SAYFA}&sayfa=${n}`).then((r) => r.json()).catch(() => { d.onbellek.delete(n); return null; }));
+  return d.onbellek.get(n);
+};
+const azHareket = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// a typed tip amount: "1,5" or "1.5"; at most 5 decimals (luna), between 0.00001 and 1,000,000 NIM; otherwise null
+const bahsisTutar = (s) => { const n = Number(String(s ?? '').trim().replace(/\s/g, '').replace(',', '.')); return Number.isFinite(n) && n >= 1e-5 && n <= 1e6 ? Math.round(n * 1e5) / 1e5 : null; };
+// Turning a page (swipe with a finger on phones, click / arrow keys on the web, keep it elegant):
+// the old page turns away the way it was pushed, the new one comes in from the other side.
+async function ariSayfaYaz(sayfa, yon = 0) {
+  const d = ariCam; if (!d) return;
+  const hedef = Math.min(d.sayfaSayisi, Math.max(1, sayfa));
+  const el = d.perde.querySelector('.ari-sayfa');
+  if (yon && hedef === d.sayfa) { el.style.transition = ''; el.style.transform = ''; el.style.opacity = ''; return; }   // already the first / last page
+  d.sayfa = hedef;
+  const istek = d.sayfa, no = d.perde.querySelector('.ari-no'), [geri, ileri] = d.perde.querySelectorAll('.ari-gez button');
+  const durum = () => { no.textContent = `${sayiYaz(d.sayfa)} / ${sayiYaz(d.sayfaSayisi)}`; geri.disabled = d.sayfa <= 1; ileri.disabled = d.sayfa >= d.sayfaSayisi; };
+  durum();
+  const oyna = !!yon && !azHareket(), gelen = ariSayfaGetir(d, istek);
+  if (oyna) { el.style.transition = 'transform .17s ease-in, opacity .17s ease-in'; el.style.transform = `translateX(${-yon * 30}%) rotateY(${yon * 16}deg)`; el.style.opacity = '0'; }
+  else el.classList.add('yukleniyor');
+  const [j] = await Promise.all([gelen, oyna ? new Promise((r) => setTimeout(r, 170)) : null]);
+  if (ariCam !== d || d.sayfa !== istek) return;   // closed, or another page was asked meanwhile
+  el.classList.remove('yukleniyor');
+  if (!j?.arilar) el.innerHTML = `<div class="not">${L('Liste alınamadı, tekrar dene.', 'Could not load the list, try again.')}</div>`;
+  else {
+    if (j.toplam > 0) { d.sayfaSayisi = Math.max(1, Math.ceil(j.toplam / ARI_SAYFA)); durum(); }
+    el.innerHTML = ariCipYaz(j.arilar.slice(0, ARI_SAYFA)) || `<div class="not">${L('Bu sayfada arı yok.', 'No bees on this page.')}</div>`;
+  }
+  if (oyna) {
+    el.style.transition = 'none'; el.style.transform = `translateX(${yon * 30}%) rotateY(${-yon * 16}deg)`; el.style.opacity = '0';
+    void el.offsetWidth;   // start from the other side
+    el.style.transition = 'transform .28s cubic-bezier(.2,.9,.3,1.08), opacity .22s ease-out'; el.style.transform = ''; el.style.opacity = '';
+  }
+  ariSayfaGetir(d, istek + 1); if (yon < 0) ariSayfaGetir(d, istek - 1);
+}
+// A finger swipe turns the page: the names follow the finger; past 56 px (or a quick flick) the next / previous page comes.
+// A mouse does not drag (on the web: the arrows and the ← → keys). Up-down stays a normal scroll.
+function ariKaydirBagla(perde) {
+  const govde = perde.querySelector('.ari-cam-govde'), liste = perde.querySelector('.ari-sayfa');
+  let bas = null;
+  const yerine = () => { liste.style.transition = ''; liste.style.transform = ''; liste.style.opacity = ''; };
+  govde.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' || !ariCam || e.target.closest('button')) return; bas = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, yatay: null }; });
+  govde.addEventListener('pointermove', (e) => {
+    if (!bas || e.pointerId !== bas.id || !ariCam) return;
+    const dx = e.clientX - bas.x, dy = e.clientY - bas.y;
+    if (bas.yatay === null && Math.hypot(dx, dy) > 8) bas.yatay = Math.abs(dx) > Math.abs(dy) * 1.2;
+    if (!bas.yatay) return;
+    const ucta = (dx > 0 && ariCam.sayfa <= 1) || (dx < 0 && ariCam.sayfa >= ariCam.sayfaSayisi), x = ucta ? dx * 0.25 : dx;   // a rubber band at the first / last page
+    liste.style.transition = 'none'; liste.style.transform = `translateX(${x}px) rotateY(${x / 40}deg)`; liste.style.opacity = String(1 - Math.min(0.45, Math.abs(x) / 500));
+  });
+  const birak = (e) => {
+    if (!bas || e.pointerId !== bas.id) return;
+    const dx = e.clientX - bas.x, hiz = Math.abs(dx) / Math.max(1, performance.now() - bas.t), yatay = bas.yatay; bas = null;
+    if (!yatay || !ariCam) return yerine();
+    const yon = Math.abs(dx) > 56 || hiz > 0.45 ? (dx < 0 ? 1 : -1) : 0, hedef = ariCam.sayfa + yon;
+    if (yon && hedef >= 1 && hedef <= ariCam.sayfaSayisi) return ariSayfaYaz(hedef, yon);
+    liste.style.transition = 'transform .25s cubic-bezier(.2,.9,.3,1.2), opacity .2s'; liste.style.transform = ''; liste.style.opacity = '';   // not far enough: back into place
+  };
+  govde.addEventListener('pointerup', birak); govde.addEventListener('pointercancel', birak);
+}
+function ariCamKapat(sessiz) {
+  const d = ariCam; if (!d) return; ariCam = null; d.perde.remove();
+  if (!sessiz && history.state?.ariCam) { ariGeriYut = true; try { history.back(); } catch { ariGeriYut = false; } }
+}
+// A question in our own design (the browser's own confirm box does not fit): the same wooden frame and glass.
+// Resolves true / false; the back button, Esc and a tap outside answer "no".
+let onayPencere = null, onayGeriYut = false;
+function onayIste(baslik, aciklama, evet) {
+  onayKapat(false, true);
+  return new Promise((coz) => {
+    const perde = document.createElement('div');
+    perde.className = 'ari-perde'; perde.setAttribute('role', 'alertdialog'); perde.setAttribute('aria-modal', 'true'); perde.setAttribute('aria-labelledby', 'onayBas');
+    perde.innerHTML = `<div class="a-cerceve ari-cerceve onay-cerceve"><div class="a-cam ari-cam"><div class="a-bar"><i></i><i></i><i></i><span>${esc(secili?.p.isim || 'hive')}.nim</span></div>
+      <div class="onay-govde"><b id="onayBas">${esc(baslik)}</b><p>${esc(aciklama)}</p><div class="onay-dug"><button type="button" class="a-btn ikinci" data-c="0">${L('Vazgeç', 'Cancel')}</button><button type="button" class="a-btn ana" data-c="1">${esc(evet)}</button></div></div></div></div>`;
+    $('oda').appendChild(perde);
+    onayPencere = { perde, coz };
+    history.pushState?.({ ...(history.state || {}), onay: 1 }, '');
+    perde.onclick = (e) => { if (e.target === perde) onayKapat(false); };
+    perde.querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => onayKapat(b.dataset.c === '1')));
+    perde.querySelector('[data-c="0"]').focus({ preventScroll: true });
+  });
+}
+function onayKapat(sonuc, sessiz) {
+  const o = onayPencere; if (!o) return; onayPencere = null; o.perde.remove(); o.coz(!!sonuc);
+  if (!sessiz && history.state?.onay) { onayGeriYut = true; try { history.back(); } catch { onayGeriYut = false; } }
 }
 
 // Own domain: state + DNS instructions (A, and TXT for ownership). The worker updates the states every minute.
@@ -498,20 +653,20 @@ async function gorselKucult(f, enCok) {
 }
 function gorunumBagla(d) {
   const el = $('gd'); let vrg = d.v.vurgu, kapak = d.v.kapak;
-  const oku = () => [...el.querySelectorAll('.gd-sat')].filter((r) => r.querySelector('.gd-sw').classList.contains('acik')).map((r) => r.dataset.k);
+  const oku = () => [...el.querySelectorAll('.gd-liste .gd-sat')].filter((r) => r.querySelector('.gd-sw').classList.contains('acik')).map((r) => r.dataset.k);
   const ciz = () => {
     const ks = oku(), yazi = el.querySelector('.gd-yazi').value;
     el.querySelector('.gd-say').textContent = yazi.length + '/160';
     const on = el.querySelector('.gd-onizle'); on.style.setProperty('--c', VURGU[vrg][0]);
     on.innerHTML = `<i class="o-kim"><i></i><b>${esc(d.p.isim)}<em>.nim</em></b></i>${yazi ? `<i class="o-yazi">${esc(yazi)}</i>` : ''}${ks.map((k, j) => `<i class="o-${k} ${j === 0 ? 'ilk' : ''}">${KART_ADI()[k]}</i>`).join('')}`;
     if (kapak === 'gorsel' && gorsel(d.p, 'kapak')) { const s = on.querySelector('.o-site'); if (s) { s.style.backgroundImage = `url("${gorsel(d.p, 'kapak')}")`; s.classList.add('gorselli'); } }
-    gorunumBagla.secim = { kartlar: ks, vurgu: vrg, tanitim: yazi.trim().slice(0, 160), kapak };
+    gorunumBagla.secim = { kartlar: ks, vurgu: vrg, tanitim: yazi.trim().slice(0, 160), kapak, isimler: el.querySelector('[data-isimler]').classList.contains('acik') };
   };
   el.querySelectorAll('.gd-sw').forEach((b) => (b.onclick = () => { b.classList.toggle('acik'); ciz(); }));
   el.querySelectorAll('[data-kapak]').forEach((b) => (b.onclick = () => { if (b.dataset.kapak === 'gorsel' && !gorsel(d.p, 'kapak')) return el.querySelector('[data-gorsel="kapak"]').click(); kapak = b.dataset.kapak; el.querySelectorAll('[data-kapak]').forEach((x) => x.classList.toggle('sec', x === b)); ciz(); }));
   const silBagla = () => el.querySelectorAll('[data-sil-gorsel]').forEach((b) => (b.onclick = async (e) => {
     e.preventDefault(); e.stopPropagation();   // inside the label: do not open the file picker
-    const ad = b.dataset.silGorsel; if (!confirm(ad === 'kapak' ? L('Kapak görseli silinsin mi?', 'Delete the cover picture?') : L('Fotoğraf silinsin mi?', 'Delete this photo?'))) return;
+    const ad = b.dataset.silGorsel; if (!(await onayIste(ad === 'kapak' ? L('Kapak görseli silinsin mi?', 'Delete the cover picture?') : L('Fotoğraf silinsin mi?', 'Delete this photo?'), L('Silinen görsel geri gelmez; istersen yenisini yüklersin.', 'A deleted picture does not come back; you can upload a new one.'), L('Sil', 'Delete')))) return;
     const r = await api(`/api/medya/${d.p.isim}/${ad}`, { method: 'DELETE' });
     if (!r.ok) return bildir(r.status === 401 ? L('Oturum bitti, yeniden gir', 'Session ended, sign in again') : 'HTTP ' + r.status);
     d.medya = (d.medya || []).filter((x) => x.ad !== ad);
@@ -681,11 +836,12 @@ async function odaAc(h, yeni = false) {
     oda.style.visibility = ac > 0 ? 'visible' : 'hidden'; oda.style.clipPath = hexClip(k.x, k.y, k.r * 0.82 + (tam - k.r * 0.82) * cikis(ac)); oda.style.opacity = Math.min(1, ac * 3);
   });
   oda.style.visibility = 'visible'; oda.style.clipPath = 'none'; oda.style.opacity = 1;
+  if (odaAcik && secili === h) motor.uyut?.(true);   // the room covers the hive: the map stops drawing until the room closes
   await odaCiz(yeni);
   if (donus?.kaydir) for (const ms of [0, 400, 1200]) setTimeout(() => { const o = $('odaIc'); if (o && o.scrollTop < donus.kaydir) o.scrollTop = donus.kaydir; }, ms);   // content may load late
 }
 async function odaKapat(geriTusu) {
-  if (!odaAcik) return; const h = secili, oda = $('oda'); cancelAnimationFrame(odaRaf);
+  if (!odaAcik) return; const h = secili, oda = $('oda'); cancelAnimationFrame(odaRaf); motor.uyut?.(false); ariCamKapat(true); onayKapat(false, true);
   const bas = performance.now(), tam = Math.hypot(innerWidth, innerHeight);
   await new Promise((ok) => { const f = (z) => { const v = Math.min(1, (z - bas) / 450), k = motor.konum(h); oda.style.clipPath = hexClip(k.x, k.y, k.r * 0.82 + (tam - k.r * 0.82) * (1 - eio(v))); if (v < 1) requestAnimationFrame(f); else ok(); }; requestAnimationFrame(f); });
   oda.style.visibility = 'hidden'; $('odaIc').innerHTML = ''; $('odaUcus').innerHTML = ''; document.querySelector('.a-perde')?.remove(); odaArilar = []; odaAcik = false; secili = null;
@@ -693,6 +849,10 @@ async function odaKapat(geriTusu) {
   if (!geriTusu) try { history.back(); } catch {}
 }
 addEventListener('popstate', () => {
+  if (onayGeriYut) { onayGeriYut = false; return; }   // our own step back after a question was answered
+  if (onayPencere) return onayKapat(false, true);     // the back button answers a question with "no"
+  if (ariGeriYut) { ariGeriYut = false; return; }   // our own step back after the glass window was closed with ×
+  if (ariCam) return ariCamKapat(true);              // the phone's back button closes the bee window first
   if (odaAcik && ziyaretciGozu) { ziyaretciGozu = false; gozOnizleme = null; return odaCiz(false); }   // the back button returns from the visitor view to the panel
   if (odaAcik) odaKapat(true);
 });   // the phone's back button closes the room first
@@ -750,7 +910,8 @@ async function islem(ne, el) {
       ? { kartlar: v.kartlar.includes('kasa') ? v.kartlar.filter((k) => k !== 'kasa') : [...v.kartlar, 'kasa'], vurgu: v.vurgu, tanitim: v.tanitim }
       : gorunumBagla.secim;
     try {
-      const j = await ayarBirlestir(p, { 'vitrin.kartlar': s.kartlar.join(',') || 'yok', 'vitrin.vurgu': s.vurgu, tanitim: s.tanitim, 'vitrin.kapak': s.kapak || v.kapak || 'canli' });
+      const j = await ayarBirlestir(p, { 'vitrin.kartlar': s.kartlar.join(',') || 'yok', 'vitrin.vurgu': s.vurgu, tanitim: s.tanitim, 'vitrin.kapak': s.kapak || v.kapak || 'canli',
+        'vitrin.arilar': (s.isimler ?? v.isimler) ? 'acik' : 'gizli' });
       bildir(ne === 'kasaGorunur' ? (s.kartlar.includes('kasa') ? L('Kasan artık vitrinde görünüyor', 'Your vault now shows on your page') : L('Kasan artık yalnız sana görünür', 'Your vault is now visible only to you')) : L('Görünümün kaydedildi, sürüm #', 'Your page is saved, version #') + j.surum);
     } catch (e) { bildir(e.message); }
     return odaCiz(false);
@@ -764,15 +925,48 @@ async function islem(ne, el) {
   if (ne === 'kopyala') { bildir(await panoyaYaz(p.adres) ? L('Adres kopyalandı', 'Address copied') : p.adres); return; }
   const yetkiYok = async (r) => { if (r.status === 401) { otYaz(p.isim, ''); bildir(L('Oturum bitti, yeniden gir', 'Session ended, sign in again')); odaCiz(false); return true; } return false; };
   if (ne === 'bahsis') { const k = $('bahsisKutu'); if (k) k.hidden = !k.hidden; return; }
+  // the amount: − / + by one (not below 0.1), or a quick pick; typing is free (any amount, in our own design)
+  if (ne === 'bahsisAyar') {
+    const i = $('bahsisNim'); if (!i) return;
+    const v = el?.dataset?.nim ? Number(el.dataset.nim) : Math.max(0.1, Math.round(((bahsisTutar(i.value) || 0) + Number(el?.dataset?.y || 0)) * 1e5) / 1e5);
+    i.value = String(v).replace('.', dil === 'tr' ? ',' : '.'); i.dispatchEvent(new Event('input')); return;
+  }
   if (ne === 'bahsisGonder') {
     // Tip: from the visitor's own wallet to the name owner's address, note "bahsis". Hive holds nothing.
-    const nim = Number(el?.dataset?.nim); if (!(nim > 0)) return;
+    // The answer is written inside the tip box, in plain words (Pay's raw English error sat on top of Pay's own notice).
+    const not = (yazi) => { const k = $('bahsisKutu'); if (!k) return bildir(yazi); let n = k.querySelector('.bahsis-not'); if (!n) { n = document.createElement('div'); n.className = 'bahsis-not'; n.setAttribute('role', 'status'); k.appendChild(n); } n.textContent = yazi; };
+    const nim = bahsisTutar($('bahsisNim')?.value);
+    if (!nim) return not(L('Geçerli bir tutar yaz (ör. 2 ya da 0,5).', 'Type a valid amount (e.g. 2 or 0.5).'));
     const c = await cuzdan(); if (!c?.sendBasicTransactionWithData) return bildir(L('Cüzdan yok: Nimiq Pay ya da Heylogram Wallet ile aç', 'No wallet: open in Nimiq Pay or with Heylogram Wallet'));
+    // Enough NIM? Nimiq Pay keeps two accounts (read from its source, 10.11.2026): the top-up address, where money sent to a name
+    // arrives, and the spending vault (an HTLC) it pays from. Top-up money moves into the vault only once it reaches the
+    // "Auto-deposit threshold" (5 NIM by default). So spendable = the vault; the rest is waiting. Too little -> say it here, do not open Pay.
+    let harcanir = null, bekleyen = 0;
     try {
-      const r = await c.sendBasicTransactionWithData({ recipient: p.adres, value: Math.round(nim * 1e5), fee: 0, data: 'bahsis ' + p.isim + '.nim' });
+      const h = await c.listAccounts?.(), adresler = (Array.isArray(h) ? h : []).map((x) => (typeof x === 'string' ? x : x?.address)).filter(Boolean), P = 'https://signal.heylogram.tv/pigeonapi/api/';
+      const bilgi = await Promise.all(adresler.map(async (a) => {
+        const [b, t] = await Promise.all([fetch(P + 'balance/' + encodeURIComponent(a)).then((r) => r.json()).catch(() => null), fetch(P + 'address/' + encodeURIComponent(a)).then((r) => r.json()).catch(() => null)]);
+        return { deger: Number.isFinite(b?.value) ? b.value / 1e5 : null, kasa: t?.type === 'htlc' };
+      }));
+      if (bilgi.length && bilgi.every((x) => x.deger != null)) {
+        const kasa = bilgi.filter((x) => x.kasa), duz = bilgi.filter((x) => !x.kasa), top = (l) => l.reduce((t, x) => t + x.deger, 0);
+        if (kasa.length) { harcanir = top(kasa); bekleyen = top(duz); } else harcanir = top(duz);
+      }
+    } catch {}
+    if (harcanir != null && harcanir < nim) return not(harcanir + bekleyen >= nim
+      ? L(`Pay'de şu an harcanabilir ${sayiYaz(harcanir)} NIM. ${sayiYaz(bekleyen)} NIM yatırma adresinde bekliyor: Nimiq Pay gelen parayı "Auto-deposit threshold" tutarına (varsayılan 5 NIM) ulaşınca harcama kasasına aktarır. Hemen kullanmak için Pay → Settings → Auto-deposit threshold → 0.`,
+        `Spendable in Pay right now: ${sayiYaz(harcanir)} NIM. ${sayiYaz(bekleyen)} NIM is waiting on your top-up address: Nimiq Pay moves incoming money to the spending vault once it reaches the "Auto-deposit threshold" (5 NIM by default). To use it now: Pay → Settings → Auto-deposit threshold → 0.`)
+      : L(`Cüzdanında ${nim} NIM yok (toplam ${sayiYaz(harcanir + bekleyen)} NIM). Daha küçük bir tutar seç.`, `Your wallet does not have ${nim} NIM (total ${sayiYaz(harcanir + bekleyen)} NIM). Pick a smaller amount.`));
+    try {
+      const r = await c.sendBasicTransactionWithData({ recipient: p.adres, value: Math.round(nim * 1e5), fee: 0, data: 'Tip ' + p.isim + '.nim' });   // English note: the owner may read it anywhere
       if (r?.error) throw new Error(r.error.message || 'reddedildi');
       bildir(L('Teşekkürler! Bahşiş gönderildi: ', 'Thank you! Tip sent: ') + nim + ' NIM'); $('bahsisKutu').hidden = true;
-    } catch (e) { bildir(L('Gönderilmedi: ', 'Not sent: ') + e.message); }
+    } catch (e) {
+      const m = String(e?.message || e);
+      not(/exceeds balance|insufficient|not enough/i.test(m) ? L('Bakiyen bu tutara yetmiyor; daha küçük bir tutar seç.', 'Your balance is not enough for this amount; pick a smaller one.')
+        : /cancel|denied|reject|reddedildi|closed/i.test(m) ? L('Vazgeçildi; para gitmedi.', 'Cancelled; no money moved.')
+        : L('Gönderilmedi, para gitmedi. Biraz sonra tekrar dene.', 'Not sent, no money moved. Try again in a moment.'));
+    }
     return;
   }
   if (ne === 'odemeOlustur') {
@@ -814,7 +1008,7 @@ async function islem(ne, el) {
     return alanlariYaz(p);
   }
   if (ne === 'alanSil') {
-    const alan = el?.dataset?.alan; if (!alan || !confirm(alan + L(' bağlantısı kaldırılsın mı?', ' — remove this domain?'))) return;
+    const alan = el?.dataset?.alan; if (!alan || !(await onayIste(alan + L(' kaldırılsın mı?', ' — remove this domain?'), L('Alan adı bu peteğin sitesini açmayı bırakır; adın kendisi sende kalır.', 'The domain stops opening this cell\'s site; the domain itself stays yours.'), L('Kaldır', 'Remove')))) return;
     const r = await api('/api/alan/' + p.isim + '/' + encodeURIComponent(alan), { method: 'DELETE' }); if (await yetkiYok(r)) return;
     bildir(L('Kaldırılıyor; bir dakika içinde biter.', 'Removing; done within a minute.')); return alanlariYaz(p);
   }
@@ -868,6 +1062,18 @@ async function islem(ne, el) {
       $('kanitKopya').onclick = kopyala; kopyala();
     } catch (e) { bildir(e.message); }
     return;
+  }
+  if (ne === 'sayacSifirla') {   // visits and signed-in bees go to zero; sub-name holders stay (they belong to the name)
+    if (!(await onayIste(L('Sayaçlar sıfırlansın mı?', 'Reset the counters?'), L('Ziyaret sayıları ve imzayla gelen arılar silinir; alt isim sahipleri arı olarak kalır. Geri alınamaz.', 'Visit counts and the bees who signed in are deleted; sub-name holders stay as bees. This cannot be undone.'), L('Sıfırla', 'Reset')))) return;
+    const r = await api('/api/sayac/' + p.isim, { method: 'DELETE' }); if (await yetkiYok(r)) return; const j = await r.json().catch(() => ({}));
+    bildir(r.ok ? L('Sayaçlar sıfırlandı', 'Counters reset') : L('Olmadı: ', 'Failed: ') + (j.hata || r.status));
+    if (r.ok) { await yukle(); odaCiz(false); } return;
+  }
+  if (ne === 'siteKaldir') {   // the cell's site leaves Hive; the name stays
+    if (!(await onayIste(L('Site Hive\'dan kaldırılsın mı?', 'Remove the site from Hive?'), L('İsmin sende kalır, peteğin boş görünür. Yüklenen dosyalar, ziyaret sayıları ve imzayla gelen arılar silinir; kendi sunucundaki siteye dokunulmaz.', 'The name stays yours and your cell shows empty. Uploaded files, visit counts and the bees who signed in are deleted; a site on your own server is not touched.'), L('Siteyi kaldır', 'Remove site')))) return;
+    const r = await api('/api/site/' + p.isim, { method: 'DELETE' }); if (await yetkiYok(r)) return; const j = await r.json().catch(() => ({}));
+    bildir(r.ok ? L('Site kaldırıldı; peteğin boş görünüyor', 'Site removed; your cell shows empty') : L('Olmadı: ', 'Failed: ') + (j.hata || r.status));
+    if (r.ok) { await yukle(); odaCiz(false); } return;
   }
   if (ne === 'bagla') {
     const r = await api('/api/bagla/' + p.isim, { method: 'POST', body: JSON.stringify({ url: $('disUrl').value.trim() }) }); if (await yetkiYok(r)) return; const j = await r.json();
