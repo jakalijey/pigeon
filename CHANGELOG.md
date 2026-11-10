@@ -2,6 +2,12 @@
 
 What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> always runs the latest version.
 
+## 10 November 2026: Nimiq Pay vaults that were extended
+
+- **Vault owner from the vault itself.** Nimiq Pay keeps spendable NIM in an HTLC vault and, before it times out, moves it into a new vault created by the old one. Pigeon now reads the owner from the refund address written in the vault, so a payment from an extended vault is credited to the right wallet, and a name can never be given to a vault address.
+- **Balances.** Extended vaults are followed to the live one, so `/api/vaults/:address` and `/api/balance/:address` show the full spendable amount.
+- **Tests.** `server/vaults.test.mjs` covers direct, extended, refunded and foreign vaults.
+
 ## 6 November 2026: Choose the name you show
 
 - **One-letter names.** They now have their own price: 100,000 NIM. Other prices stay the same.

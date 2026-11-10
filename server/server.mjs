@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createChain } from './chain.mjs';
 import { createRegistry } from './registry.mjs';
 import { paymentsFor, isValidName } from './rules.mjs';
+import { findVaults } from './vaults.mjs';
 
 const ROOT = new URL('.', import.meta.url);
 const cfgFile = new URL('config.json', ROOT);
@@ -73,13 +74,7 @@ async function vaultsOf(a, maxAge = 15 * 60000) {
     const value = await chain.balance(pretty(a)).catch(() => 0);
     return { value, vaults: [], total: value, pending: true };
   }
-  const txs = await historyOf(pretty(a), 0, 300000);
-  const candidates = [...new Set(txs.filter((t) => t.recipientType === 'htlc' && compact(t.sender) === a && t.executionResult !== false && t.state !== 'invalidated' && t.state !== 'expired').map((t) => compact(t.recipient)))].slice(-50);
-  const vaults = [];
-  for (const v of candidates) {
-    const acc = await chain.account(pretty(v)).catch(() => null);
-    if (acc?.type === 'htlc' && compact(acc.sender) === a && acc.balance > 0) vaults.push({ address: pretty(v), value: acc.balance, timeout: acc.timeout ?? null });
-  }
+  const vaults = await findVaults(a, { historyOf: (x) => historyOf(x, 0, 300000), account: (x) => chain.account(x), compact, pretty });
   const value = await chain.balance(pretty(a));
   const v = { value, vaults, total: value + vaults.reduce((t, x) => t + x.value, 0), at: Date.now() };
   vaultCache.set(a, { at: Date.now(), v });

@@ -1,4 +1,5 @@
 import * as Nimiq from '@nimiq/core';
+import { vaultOwner } from './vaults.mjs';
 
 export async function createChain({ network = 'MainAlbatross', log = console.log } = {}) {
   const config = new Nimiq.ClientConfiguration();
@@ -35,8 +36,8 @@ export async function createChain({ network = 'MainAlbatross', log = console.log
     const key = String(address).replace(/\s/g, '').toUpperCase();
     if (creators.has(key)) return creators.get(key);
     const txs = await history(address, 0);
-    const made = txs.find((t) => t.recipientType === 'htlc' && String(t.recipient).replace(/\s/g, '').toUpperCase() === key);
-    const who = made ? String(made.sender).replace(/\s/g, '').toUpperCase() : null;
+    // owner = refund address in the vault data (an extended vault is created by the old vault, not by the user)
+    const who = vaultOwner(txs, key, (x) => String(x).replace(/\s/g, '').toUpperCase());
     if (who) creators.set(key, who);
     return who;
   }

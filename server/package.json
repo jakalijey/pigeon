@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node rules.test.mjs"
+    "test": "node rules.test.mjs && node vaults.test.mjs"
   },
   "engines": {
     "node": ">=20"
