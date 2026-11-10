@@ -25,7 +25,7 @@ Money is a letter. You write `mert.nim`, seal it, and the pigeon flies to the ri
 - **Split.** Tear a bill into stamps, one per person. Each stamp gets a postmark when that person pays.
 - **Get a ring.** Register your own `.nim` name, on chain, with one payment.
 - **Sub-rings.** The owner of `pigeon.nim` can give `cafe.pigeon.nim` to any address, or open sub-names so that players claim their own.
-- **SDK for other apps.** Any website, game or Nimiq Pay mini app can resolve names, show them, log users in and pay by name. See [`sdk/`](sdk/README.md).
+- **SDK for other apps.** Any website, game or Nimiq Pay mini app can resolve names, show them, log users in and pay by name. Install with `npm install pigeon-nim` (TypeScript types included) or see [`sdk/`](sdk/README.md).
 - **A home for every name.** Every `.nim` name gets a cell in [Hive](https://hive.heylogram.com): a site with its own domain, a database, a shop and a QR till for the counter. Pigeon's home screen opens your cell. See [Hive](#hive-a-home-for-every-name).
 - **Fake link warning.** If a request claims to come from `mert.nim` but the money would go to another address, the app blocks the payment and shows both pigeons side by side.
 
