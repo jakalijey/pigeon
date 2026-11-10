@@ -48,6 +48,8 @@ A registration is a transaction that:
 
 If the payment comes from a wallet vault (an HTLC contract, which is how Nimiq Pay holds spendable funds), the name goes to the address that created that vault, which is the wallet's own top-up address. A vault cannot receive later payments, so this keeps every name payable. Anyone can check it: the vault's creation transaction is public.
 
+Receiving in Nimiq Pay: money sent to a name lands on that top-up address, and Nimiq Pay shows it at once. Pay spends only from its vault, though, and moves top-up money into the vault once it reaches the wallet's Auto-deposit threshold (5 NIM by default). So a small payment is visible right away but becomes spendable a little later. Nothing is lost while it waits. To make every payment spendable immediately: Nimiq Pay → Settings → Auto-deposit threshold → 0 → Save.
+
 The earliest valid registration of a name wins: lower block height first, and inside the same block the lower transaction hash. Later payments for a name that is already taken do not change its owner. The first name an address registers is its primary name, used to show who you are. An owner of several names can choose another one at any time: a transaction to the registry with the note `ana:<name>`. The latest valid choice wins; a choice for a name the sender does not own is ignored.
 
 Prices depend on length: shorter names cost more. A few names such as `nim`, `nimiq`, `admin` and `wallet` are reserved. The exact list and prices are in `server/config.example.json` and `server/rules.mjs`.

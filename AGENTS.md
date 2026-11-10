@@ -159,6 +159,8 @@ await nim.pay(winnerAddress, 2, 'prize 1');           // owner pays a prize from
 
 nim.pay throws when the wallet refuses or returns an error. Log prizes in a collection only the owner can write (for example the owner's own document with write "player's own doc"), and check that log before paying again.
 
+Money sent to a Nimiq Pay user lands on their top-up address and shows up at once. Nimiq Pay spends only from its vault (an HTLC) and moves top-up money into it once it reaches the user's Auto-deposit threshold (5 NIM by default), so a small tip or prize can be visible but not yet spendable. Nothing is lost while it waits. Tell your users: Nimiq Pay → Settings → Auto-deposit threshold → 0 → Save makes every payment spendable immediately. Before asking a user to pay, check the vault: with "Transaction value exceeds balance" the vault holds less than the amount even if the total looks enough.
+
 ### Shop till (QR) for counters
 
 The owner opens the "Get paid" tab in the Hive panel, types an amount and shows a QR. It is a standard `nimiq:` payment link. The amount gets a few extra luna (12 NIM → 12.00387) so each open sale is unique: Nimiq Pay drops the note of a scanned QR, so Hive recognizes the payment by its exact amount, made after the sale was opened. A QR lasts 15 minutes. This is a panel feature for the owner; apps do not call it.
