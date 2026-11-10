@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createChain } from './chain.mjs';
 import { createRegistry } from './registry.mjs';
-import { paymentsFor, isValidName } from './rules.mjs';
+import { paymentsFor, isValidName, isAddress } from './rules.mjs';
 import { findVaults } from './vaults.mjs';
 
 const ROOT = new URL('.', import.meta.url);
@@ -21,13 +21,13 @@ mkdirSync(dataDir, { recursive: true });
 
 const compact = (a) => String(a || '').replace(/\s/g, '').toUpperCase();
 const pretty = (a) => compact(a).replace(/(.{4})/g, '$1 ').trim();
-const isAddress = (a) => /^NQ[0-9]{2}[0-9A-Z]{32}$/.test(a);
 const note = (t) => { try { return t.data?.raw ? Buffer.from(t.data.raw, 'hex').toString('utf8') : ''; } catch { return ''; } };
 const done = (t) => (t.state === 'included' || t.state === 'confirmed') && t.executionResult !== false;
-const newId = () => randomBytes(4).toString('hex');
 
 const storeFile = fileURLToPath(new URL('requests.json', dataDir));
 const store = existsSync(storeFile) ? JSON.parse(readFileSync(storeFile, 'utf8')) : { requests: {}, splits: {} };
+// a new id never reuses one in use (an old request link must keep pointing at its own recipient)
+const newId = () => { let id; do id = randomBytes(4).toString('hex'); while (store.requests[id] || store.splits[id]); return id; };
 let saveTimer = null;
 const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => { writeFileSync(storeFile + '.tmp', JSON.stringify(store)); renameSync(storeFile + '.tmp', storeFile); }, 300); };
 

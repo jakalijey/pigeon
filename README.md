@@ -1,5 +1,7 @@
 # Pigeon
 
+[![Test](https://github.com/jakalijey/pigeon/actions/workflows/test.yml/badge.svg)](https://github.com/jakalijey/pigeon/actions/workflows/test.yml)
+
 Pay anyone on Nimiq by name. A Nimiq Pay mini app with `.nim` names, payment requests and bill splitting.
 
 Live: <https://pigeon.heylogram.com> (open it in Nimiq Pay). Hosted on the Heylogram site platform; the server runs at `api.heylogram.com/pigeon`.
@@ -46,7 +48,7 @@ A registration is a transaction that:
 3. pays at least the price of that name,
 4. is included in a block and executed successfully.
 
-If the payment comes from a wallet vault (an HTLC contract, which is how Nimiq Pay holds spendable funds), the name goes to the address that created that vault, which is the wallet's own top-up address. A vault cannot receive later payments, so this keeps every name payable. Anyone can check it: the vault's creation transaction is public.
+If the payment comes from a wallet vault (an HTLC contract, which is how Nimiq Pay holds spendable funds), the name goes to the wallet that made that vault, which is the wallet's own top-up address. The vault names that wallet as its refund address, and Pigeon accepts it only when that wallet really created the vault, itself or by extending one of its own vaults; a vault that names someone else counts for nobody. A vault cannot receive later payments, so this keeps every name payable. Anyone can check it: the vault's creation transaction is public.
 
 Receiving in Nimiq Pay: money sent to a name lands on that top-up address, and Nimiq Pay shows it at once. Pay spends only from its vault, though, and moves top-up money into the vault once it reaches the wallet's Auto-deposit threshold (5 NIM by default). So a small payment is visible right away but becomes spendable a little later. Nothing is lost while it waits. To make every payment spendable immediately: Nimiq Pay → Settings → Auto-deposit threshold → 0 → Save.
 
@@ -61,7 +63,7 @@ A sub-name has one level, like `cafe.pigeon.nim`. It is a 1 luna transaction to 
 - `alt:cafe.pigeon:<address>`: the owner of `pigeon.nim` gives `cafe.pigeon.nim` to an address (or to themselves without an address).
 - `altac:pigeon` / `altkapa:pigeon`: the owner opens or closes sub-names. While they are open, anyone can send `alt:<sub>.pigeon` and take that sub-name for their own wallet.
 
-Only transactions from the parent's current owner count for giving, opening and closing. A sub-name given by someone else never becomes the recipient's primary name.
+Only transactions from the parent's current owner count for giving, opening and closing. A sub-name given by someone else never becomes the recipient's primary name by itself; the recipient can still choose it with `ana:`.
 
 ### Gifts
 
@@ -78,7 +80,7 @@ A request has a short id. The payer's wallet sends the payment with the note `od
 - **Identicons.** Each address has a unique picture. The app shows it everywhere, so a lookalike name or a swapped address is easy to notice.
 - **Fake request check.** A request can say which name it comes from. If that name belongs to a different address, the app refuses to pay.
 - **Notes are public.** Notes are written on chain, and the app says so before you send.
-- **Server limits.** The server validates every input, caps body size and rate limits requests.
+- **Server limits.** The server validates every input (addresses with their Nimiq checksum), caps body size and rate limits requests.
 
 ## Run it
 
@@ -113,7 +115,7 @@ Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nim
 | GET | `/api/address/:address` | the name an address shows (`name`) and every name it owns (`names`) |
 | GET | `/api/balance/:address` | balance in luna |
 | GET | `/api/vaults/:address` | balance plus the Nimiq Pay vaults this address created (computed in the background; `pending` until ready) |
-| GET | `/api/subs/:name` | sub-names under a name and whether they are open |
+| GET | `/api/subs/:name` | sub-names under a name (whether they are open: `subsOpen` in `/api/name/:name`) |
 | GET | `/api/gift` | whether a gift campaign is open |
 | GET | `/api/gift/:code` | slots left and last day for a code (the code itself is never stored) |
 | GET | `/api/incoming/:address?since=<height>` | incoming payments with notes and sender names |
@@ -124,7 +126,7 @@ Then open `http://127.0.0.1:5290` in a browser to look around. Sending needs Nim
 
 Amounts are in luna (1 NIM = 100,000 luna).
 
-The note words come from Turkish: `alt` = sub-name, `altac` / `altkapa` = open / close sub-names, `hediye` = gift, `ode` = pay. They stay as they are because names already registered on chain use them.
+The note words come from Turkish: `alt` = sub-name, `altac` / `altkapa` = open / close sub-names, `hediye` = gift, `ode` = pay, `ana` = the main name an address shows. They stay as they are because names already registered on chain use them.
 
 ## Hive: a home for every name
 

@@ -2,6 +2,14 @@
 
 What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> always runs the latest version.
 
+## 11 November 2026: Vault owners checked, tests on every push
+
+- **Vault owner, checked.** A vault's refund address now counts only when that wallet created the vault, itself or by extending one of its own vaults. Every name registered so far keeps its owner.
+- **Addresses.** Requests and splits check the full Nimiq address (alphabet and checksum), like the name rules and the SDK.
+- **Request ids.** A new request or split never reuses an id that is in use.
+- **Tests on GitHub.** Every push runs the server tests (`.github/workflows/test.yml`).
+- **README.** `/api/subs`, the `ana:` note and given sub-names are described exactly as the code works.
+
 ## 10 November 2026: Nimiq Pay vaults that were extended
 
 - **Vault owner from the vault itself.** Nimiq Pay keeps spendable NIM in an HTLC vault and, before it times out, moves it into a new vault created by the old one. Pigeon now reads the owner from the refund address written in the vault, so a payment from an extended vault is credited to the right wallet, and a name can never be given to a vault address.

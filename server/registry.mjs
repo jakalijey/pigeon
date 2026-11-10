@@ -27,7 +27,7 @@ export async function createRegistry({ chain, registry, prices, cacheFile, log =
     }, 1500);
   };
 
-  // A payment from a Nimiq Pay vault (HTLC) belongs to the address that created the vault. If that cannot be resolved yet the transaction WAITS (sender null)
+  // A payment from a Nimiq Pay vault (HTLC) belongs to the wallet that made the vault (vaults.mjs). If that cannot be resolved the transaction WAITS (sender null)
   // and is retried later; a name is never given to an HTLC address (nobody can sign for it, the name would be locked forever).
   const add = async (t) => {
     const old = txs.get(t.transactionHash);
@@ -48,8 +48,14 @@ export async function createRegistry({ chain, registry, prices, cacheFile, log =
   };
 
   for (const t of await chain.history(registry, 0)) await add(t);
-  // old cache entries that stored the HTLC address as owner (sender === payer) are resolved again
-  for (const t of txs.values()) if (t.senderType === 'htlc' && t.sender && compact(t.sender) === compact(t.payer)) t.sender = null;
+  // stored vault payments are checked again with the current rule; an answer that is not ready keeps the stored owner,
+  // except old entries that stored the HTLC address itself
+  for (const t of txs.values()) {
+    if (t.senderType !== 'htlc' || !t.sender) continue;
+    const r = await chain.vaultOwnerOf(t.payer).catch(() => null);
+    if (r) t.sender = r.owner;
+    else if (compact(t.sender) === compact(t.payer)) t.sender = null;
+  }
   await retryPending();
   rebuild(); save();
   log(`registry: ${state.table.names.size} names from ${txs.size} transactions`);

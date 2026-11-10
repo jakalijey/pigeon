@@ -31,16 +31,15 @@ export async function createChain({ network = 'MainAlbatross', log = console.log
   const head = () => client.getHeadHeight();
   const balance = async (address) => Number((await client.getAccount(address)).balance ?? 0);
   const account = async (address) => client.getAccount(address);
-  const creators = new Map();
-  async function creatorOf(address) {
-    const key = String(address).replace(/\s/g, '').toUpperCase();
-    if (creators.has(key)) return creators.get(key);
-    const txs = await history(address, 0);
-    // owner = refund address in the vault data (an extended vault is created by the old vault, not by the user)
-    const who = vaultOwner(txs, key, (x) => String(x).replace(/\s/g, '').toUpperCase());
-    if (who) creators.set(key, who);
-    return who;
-  }
+  const compact = (a) => String(a || '').replace(/\s/g, '').toUpperCase();
+  const pretty = (a) => compact(a).replace(/(.{4})/g, '$1 ').trim();
+  // vault -> owner, final answers only (null: the refund address did not make that vault)
+  const vaultOwners = new Map();
+  const vaultOwnerOf = (address) => {
+    if (vaultOwners.size > 20000) vaultOwners.clear();
+    return vaultOwner(address, { historyOf: (x) => history(pretty(x), 0), compact, cache: vaultOwners });
+  };
+  const creatorOf = async (address) => (await vaultOwnerOf(address))?.owner ?? null;
 
-  return { history, listen, unlisten, head, balance, account, creatorOf, client };
+  return { history, listen, unlisten, head, balance, account, creatorOf, vaultOwnerOf, client };
 }

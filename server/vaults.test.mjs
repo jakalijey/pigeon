@@ -22,20 +22,53 @@ function fakeChain(history, accounts) {
   };
 }
 
+// vault histories by address -> owner question
+const ownerIn = (history, opts = {}) => (v) => vaultOwner(v, { historyOf: async (a) => history[compact(a)] || [], compact, ...opts });
+const V1 = 'NQ44 V1', V2 = 'NQ55 V2';
+
 await t('owner of a vault the user created is the user', async () => {
-  const txs = [create(USER, 'basic', 'NQ44 V1', USER)];
-  assert.equal(vaultOwner(txs, compact('NQ44 V1'), compact), compact(USER));
+  assert.deepEqual(await ownerIn({ [compact(V1)]: [create(USER, 'basic', V1, USER)] })(V1), { owner: compact(USER) });
 });
 
 await t('owner of an extended vault is the user, not the old vault', async () => {
-  const txs = [create('NQ44 V1', 'htlc', 'NQ55 V2', USER)];
-  assert.equal(vaultOwner(txs, compact('NQ55 V2'), compact), compact(USER));
+  const ask = ownerIn({ [compact(V1)]: [create(USER, 'basic', V1, USER)], [compact(V2)]: [create(V1, 'htlc', V2, USER)] });
+  assert.deepEqual(await ask(V2), { owner: compact(USER) });
+});
+
+await t('a vault someone else made with the user as refund address belongs to nobody', async () => {
+  assert.deepEqual(await ownerIn({ [compact(V1)]: [create(OTHER, 'basic', V1, USER)] })(V1), { owner: null });
+});
+
+await t('extending an own vault into the user\'s name does not work either', async () => {
+  const ask = ownerIn({ [compact(V1)]: [create(OTHER, 'basic', V1, OTHER)], [compact(V2)]: [create(V1, 'htlc', V2, USER)] });
+  assert.deepEqual(await ask(V2), { owner: null });
+  assert.deepEqual(await ask(V1), { owner: compact(OTHER) });
 });
 
 await t('an HTLC address is never returned as owner', async () => {
-  const noData = { ...create('NQ44 V1', 'htlc', 'NQ55 V2', USER), data: { type: 'raw', raw: '' } };
-  assert.equal(vaultOwner([noData], compact('NQ55 V2'), compact), null);
-  assert.equal(vaultOwnerFromCreation(drain('NQ44 V1', USER), compact), null);
+  const noData = { ...create(V1, 'htlc', V2, USER), data: { type: 'raw', raw: '' } };
+  assert.deepEqual(await ownerIn({ [compact(V2)]: [noData] })(V2), { owner: null });
+  assert.equal(vaultOwnerFromCreation(drain(V1, USER), compact), null);
+});
+
+await t('a creation that is not visible yet is no answer, a failed one does not count', async () => {
+  assert.equal(await ownerIn({})(V1), null);
+  assert.equal(await ownerIn({ [compact(V2)]: [create(V1, 'htlc', V2, USER)] })(V2), null);   // old vault not visible yet
+  assert.equal(await ownerIn({ [compact(V1)]: [{ ...create(USER, 'basic', V1, USER), executionResult: false }] })(V1), null);
+});
+
+await t('an endless chain of vaults is refused, and final answers are kept', async () => {
+  const history = { [compact('NQ0 V0')]: [create(USER, 'basic', 'NQ0 V0', USER)] };
+  for (let i = 0; i < 150; i++) history[compact('NQ0 V' + (i + 1))] = [create('NQ0 V' + i, 'htlc', 'NQ0 V' + (i + 1), USER)];
+  let reads = 0;
+  const cache = new Map();
+  const ask = (v) => vaultOwner(v, { historyOf: async (a) => { reads++; return history[compact(a)] || []; }, compact, cache });
+  assert.deepEqual(await ask('NQ0 V150'), { owner: null });
+  const after = reads;
+  assert.ok(after <= 102, 'reads stop at the depth limit');
+  assert.deepEqual(await ask('NQ0 V150'), { owner: null });
+  assert.equal(reads, after, 'the second answer comes from the cache');
+  assert.deepEqual(await ownerIn(history)('NQ0 V20'), { owner: compact(USER) });
 });
 
 await t('vault created directly by the user is found', async () => {

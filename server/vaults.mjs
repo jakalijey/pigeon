@@ -1,24 +1,36 @@
 // Nimiq Pay vaults (HTLC). Pay writes the user's own wallet as the refund address ("sender") of every vault,
 // also when it extends a vault: the new vault is then created FROM the old vault, so the creating transaction's
-// sender is an HTLC, not the user. The owner is therefore read from the HTLC data, never from the transaction sender.
+// sender is an HTLC, not the user. Whoever creates a vault can write any refund address into it, so the refund
+// address counts only when that wallet made the vault: itself, or by extending a vault that is its own.
 
 const valid = (t) => t.executionResult !== false && t.state !== 'invalidated' && t.state !== 'expired';
 
-/** Owner (refund address) of the vault created by transaction t, or null. */
+/** Refund address written in the vault created by transaction t, or null. */
 export function vaultOwnerFromCreation(t, compact) {
   return t?.recipientType === 'htlc' && t.data?.type === 'htlc' && t.data.sender ? compact(t.data.sender) : null;
 }
 
 /**
- * Who a vault belongs to, from that vault's own history. Never returns an HTLC address:
- * if the owner cannot be read (no HTLC data and the creator is itself an HTLC) the answer is null (caller waits).
+ * Who a vault belongs to. { owner } is a final answer (owner null: the refund address did not make this vault);
+ * null means the creation is not visible yet, ask again later. Never returns an HTLC address.
+ * historyOf(vault) reads a vault's transactions; cache keeps final answers between calls.
  */
-export function vaultOwner(txs, vault, compact) {
-  const made = txs.find((t) => t.recipientType === 'htlc' && compact(t.recipient) === vault);
+export async function vaultOwner(vault, { historyOf, compact, cache = new Map(), depth = 0, maxDepth = 100 }) {
+  const v = compact(vault);
+  if (cache.has(v)) return { owner: cache.get(v) };
+  if (depth > maxDepth) return { owner: null };   // an endless chain of vaults is refused
+  const made = (await historyOf(v)).find((t) => t.recipientType === 'htlc' && compact(t.recipient) === v && valid(t));
   if (!made) return null;
-  const owner = vaultOwnerFromCreation(made, compact);
-  if (owner) return owner;
-  return made.senderType === 'htlc' ? null : compact(made.sender);
+  const refund = vaultOwnerFromCreation(made, compact);
+  let owner = null;
+  if (refund && made.senderType !== 'htlc') owner = compact(made.sender) === refund ? refund : null;
+  else if (refund) {
+    const up = await vaultOwner(made.sender, { historyOf, compact, cache, depth: depth + 1, maxDepth });
+    if (!up) return null;
+    owner = up.owner === refund ? refund : null;
+  }
+  cache.set(v, owner);
+  return { owner };
 }
 
 /**
