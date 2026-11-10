@@ -1,0 +1,47 @@
+{
+  "name": "pigeon-nim",
+  "version": "1.0.0",
+  "description": "Use .nim names from the Pigeon registry on Nimiq in any website, game or Nimiq Pay mini app: resolve names, show names for addresses (also Nimiq Pay vaults), sign in, pay by name, sub-names.",
+  "type": "module",
+  "main": "./nim.js",
+  "types": "./nim.d.ts",
+  "exports": {
+    ".": {
+      "types": "./nim.d.ts",
+      "default": "./nim.js"
+    },
+    "./hive-db": {
+      "types": "./hive-db.d.ts",
+      "default": "./hive-db.js"
+    }
+  },
+  "files": [
+    "nim.js",
+    "nim.d.ts",
+    "hive-db.js",
+    "hive-db.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./nim.js"
+  ],
+  "keywords": [
+    "nimiq",
+    "nim",
+    "names",
+    "nimiq-pay",
+    "mini-app",
+    "web3",
+    "payments"
+  ],
+  "license": "MIT",
+  "author": "jakalijey",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jakalijey/pigeon.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://github.com/jakalijey/pigeon/tree/main/sdk#readme",
+  "bugs": "https://github.com/jakalijey/pigeon/issues"
+}

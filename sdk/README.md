@@ -7,7 +7,18 @@ Two small ES modules:
 - **`nim.js`**: names. Resolve `mert.nim` to an address, show a name next to an address, log users in with their wallet, pay by name, and give or claim sub-names under your own name.
 - **`hive-db.js`**: a Firestore-like database for apps that own a `.nim` name. Players sign in with their wallet; the owner's settings are signed and public.
 
-Both are served live, so you can import them straight away:
+Install from npm (types included):
+
+```sh
+npm install pigeon-nim
+```
+
+```js
+import { NimNames } from 'pigeon-nim';
+import { HiveDB } from 'pigeon-nim/hive-db';
+```
+
+Or import them straight from the live server:
 
 ```html
 <script type="module">
