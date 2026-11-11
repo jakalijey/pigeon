@@ -105,7 +105,7 @@ MUST for leaderboards and anything with prizes:
 - Show names that Hive resolves, never a name field the player typed: `(await db.myName(row.id)).shown`.
 - Build rows with the server id: the SDK returns `{ ...fields, id }`, so a player cannot spoof `id`.
 
-Limits per name: 50,000 reads and 20,000 writes per day, 50 MB total, 1 MB per document, 100 collections, at most 500 results per query. Reads without a signed-in session (any visitor) stop at 40,000 a day and at 600 per 10 minutes per visitor (429 `yavas`), so the owner and players always keep the rest.
+Limits per name: 50,000 reads and 20,000 writes per day, 50 MB total, 1 MB per document, 100 collections, at most 500 results per query.
 
 ### Names
 

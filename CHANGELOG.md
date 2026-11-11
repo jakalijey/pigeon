@@ -2,10 +2,9 @@
 
 What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> always runs the latest version.
 
-## 11 November 2026: Limits for reads anyone can ask for
+## 11 November 2026: Limits for heavy reads
 
-- **Pigeon history reads.** `/api/incoming` looks back at most 30 days, and any address is read up to its newest 5,000 transactions; at most three vault scans run in the background at once. The name registry itself is still read in full.
-- **Hive reads without a session.** A visitor can make at most 600 reads per cell every 10 minutes, and such reads stop at 80% of the cell's day, so the owner and signed-in players always keep the rest.
+- **Pigeon history reads.** Any address the API is asked about is read up to its newest 5,000 transactions, and at most ten vault scans run in the background at once. The name registry itself is still read in full.
 - **Hive site checks.** A page fetched to check a site's signature is read up to 3 MB (a proof file up to 64 KB), and at most 20 such checks run a minute.
 - **Hive paths.** A site's files are served only from inside its own folder.
 - **Hive in this repository** now matches the live server (`api.heylogram.com` addresses in the SDK copies and guides). AGENTS.md lists every file type an upload accepts, and the owner sign-in test uses a sample name.

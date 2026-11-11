@@ -65,8 +65,8 @@ try { for (const [a, x] of JSON.parse(readFileSync(vaultFile, 'utf8'))) vaultCac
 let vaultSaveTimer = null;
 const vaultSave = () => { clearTimeout(vaultSaveTimer); vaultSaveTimer = setTimeout(() => { try { writeFileSync(vaultFile + '.tmp', JSON.stringify([...vaultCache])); renameSync(vaultFile + '.tmp', vaultFile); } catch {} }, 2000); };
 const vaultBusy = new Map();
-// at most 3 background scans at once: unknown addresses cannot pile up work; the client asks again and gets a free slot later
-const inBackground = (a) => { if (!vaultBusy.has(a) && vaultBusy.size < 3) vaultBusy.set(a, vaultsOf(a, 0).catch(() => {}).finally(() => vaultBusy.delete(a))); };
+// at most 10 background scans at once: unknown addresses cannot pile up work; the client asks again and gets a free slot later
+const inBackground = (a) => { if (!vaultBusy.has(a) && vaultBusy.size < 10) vaultBusy.set(a, vaultsOf(a, 0).catch(() => {}).finally(() => vaultBusy.delete(a))); };
 async function vaultsOf(a, maxAge = 15 * 60000) {
   const hit = vaultCache.get(a);
   if (hit && Date.now() - hit.at < maxAge) return hit.v;
@@ -168,9 +168,7 @@ http.createServer(async (req, res) => {
       }
       if ((m = p.match(/^\/api\/incoming\/([0-9A-Za-z %]{36,80})$/)) && isAddress(compact(decodeURIComponent(m[1])))) {
         const a = compact(decodeURIComponent(m[1]));
-        // one block a second: the last 7 days by default, never more than 30 days back
-        const head = await chain.head();
-        const since = Math.max(0, head - 60 * 60 * 24 * 30, Number(u.searchParams.get('since')) || head - 60 * 60 * 24 * 7);
+        const since = Math.max(0, Number(u.searchParams.get('since')) || (await chain.head()) - 60 * 60 * 24 * 7);
         const txs = await historyOf(pretty(a), since, 8000);
         const ok = txs.filter((t) => compact(t.recipient) === a && t.state !== 'invalidated' && t.state !== 'expired' && t.executionResult !== false);
         const rows = await Promise.all(ok.map(async (t) => {

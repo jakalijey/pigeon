@@ -491,14 +491,6 @@ function kopruEkle(html) {
 // per-IP per-minute counter (nginx sets X-Real-IP itself); the map is reset every minute
 const HIZ = { kod: 30, imza: 20 }, hizSayac = new Map();
 setInterval(() => hizSayac.clear(), 60000).unref();
-// Reads without a session (anyone): at most 600 per 10 minutes per address and name, so one visitor cannot use up a cell's day
-const acikOkuma = new Map();
-function acikOkumaAsimi(req, n) {
-  const k = n + '|' + String(req.headers['x-real-ip'] || req.socket.remoteAddress || ''), t = Date.now();
-  let x = acikOkuma.get(k);
-  if (!x || t - x.bas > 600e3) { if (acikOkuma.size > 50000) acikOkuma.clear(); x = { bas: t, sayi: 0 }; acikOkuma.set(k, x); }
-  return ++x.sayi > 600;
-}
 function hizAsimi(req, tur) {
   const k = tur + '|' + String(req.headers['x-real-ip'] || req.socket.remoteAddress || '');
   const n = (hizSayac.get(k) || 0) + 1; if (hizSayac.size < 200000) hizSayac.set(k, n);
@@ -691,9 +683,7 @@ const sunucu = createServer(async (req, res) => {
         if (kuralYolu) { if (req.method !== 'PUT') return gonder(res, 200, DB.kural(n, k)); if (!kim.sahip) return gonder(res, 401, { hata: 'giris_gerekli' }); return gonder(res, 200, DB.kuralYaz(n, k, JSON.parse(await govdeOku(req, 16000) || '{}'))); }
         if (req.method === 'GET') {
           if (!DB.okumaIzni(n, k, kim)) return gonder(res, 403, { hata: 'okuma_izni_yok' });
-          const acik = !kim.sahip && !kim.oyuncu;
-          if (acik && acikOkumaAsimi(req, n)) return gonder(res, 429, { hata: 'yavas' });
-          if (!DB.say(n, 'okuma', acik ? 0.8 : 1)) return gonder(res, 429, { hata: 'gunluk_okuma_siniri', sinir: DB.SINIR.gunlukOkuma });
+          if (!DB.say(n, 'okuma')) return gonder(res, 429, { hata: 'gunluk_okuma_siniri', sinir: DB.SINIR.gunlukOkuma });
           if (id) { const b = DB.belge(n, k, id); return b == null ? gonder(res, 404, { hata: 'belge_yok' }) : gonder(res, 200, { id, veri: b }); }
           const where = u.searchParams.getAll('where').map((w) => { const [alan, op, ...d] = w.split(','); let deger = d.join(','); try { deger = JSON.parse(deger); } catch {} return [alan, op, deger]; });
           return gonder(res, 200, DB.sorgu(n, k, { where, orderBy: u.searchParams.get('orderBy') || undefined, yon: u.searchParams.get('yon') || 'asc', limit: u.searchParams.get('limit') }));
@@ -830,8 +820,6 @@ const sunucu = createServer(async (req, res) => {
     // storage: key-value per name, with QUOTA
     if ((m = p.match(/^\/api\/depo\/([a-z0-9-]{1,32})(?:\/([a-z0-9_.-]{1,64}))?$/))) {
       const n = m[1], k = m[2]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' });
-      // reads without the owner's session stop at 80% of the day and per visitor, and a refused one is not counted
-      if (req.method === 'GET' && !yetkili(req, n) && (acikOkumaAsimi(req, n) || islemBugun(n) >= KOTA.gunlukIslem * 0.8)) return gonder(res, 429, { hata: 'yavas' });
       if (islemBugun(n) >= KOTA.gunlukIslem) return gonder(res, 429, { hata: 'gunluk_kota', sinir: KOTA.gunlukIslem });
       islemSay(n);
       if (req.method === 'GET') return gonder(res, 200, k ? { [k]: veri.depo[n]?.[k] ?? null } : (veri.depo[n] || {}));
