@@ -147,7 +147,7 @@ The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents 
 
 Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
 
-**November 2026: Faces, languages and paying again**
+**November 2026: Faces, languages and receipts**
 - Spanish, next to English and Turkish.
 - Profiles: a display name and a short line on every name.
 - A menu template for cafes and stalls in Hive.

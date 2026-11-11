@@ -22,8 +22,12 @@ export function veritabani(kok) {
   }
   setInterval(() => { for (const n of kirli) { try { writeFileSync(dosya(n) + '.tmp', JSON.stringify(bellek.get(n))); renameSync(dosya(n) + '.tmp', dosya(n)); } catch {} } kirli.clear(); }, 1000);
   const bugun = () => new Date().toISOString().slice(0, 10);
-  function say(n, tur) { const v = al(n), g = bugun(); if (v.sayac.gun !== g) v.sayac = { gun: g, okuma: 0, yazma: 0 }; v.sayac[tur]++; kirli.add(n);
-    return v.sayac[tur] <= (tur === 'okuma' ? SINIR.gunlukOkuma : SINIR.gunlukYazma); }
+  // oran < 1 (reads without a session): they stop earlier and a refused one is not counted, so the rest of the day stays for the owner and players
+  function say(n, tur, oran = 1) { const v = al(n), g = bugun(); if (v.sayac.gun !== g) v.sayac = { gun: g, okuma: 0, yazma: 0 };
+    const sinir = (tur === 'okuma' ? SINIR.gunlukOkuma : SINIR.gunlukYazma) * oran;
+    if (oran < 1 && v.sayac[tur] >= sinir) return false;
+    v.sayac[tur]++; kirli.add(n);
+    return v.sayac[tur] <= sinir; }
   const boyut = (n) => Buffer.byteLength(JSON.stringify(al(n).k));
   function derinlikTamam(x, d = 0) { if (d > SINIR.derinlik) return false; if (x && typeof x === 'object') return Object.values(x).every((y) => derinlikTamam(y, d + 1)); return true; }
   function alanAl(o, yol) { return String(yol).split('.').reduce((x, k) => (x == null ? undefined : x[k]), o); }

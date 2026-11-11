@@ -13,7 +13,7 @@ You are writing an app that lives in a Hive cell (a .nim name on the Nimiq chain
 ## Hard limits of the sandbox
 
 - The site runs in a sandboxed frame without same-origin. localStorage, sessionStorage, IndexedDB and cookies throw or vanish. MUST keep state in HiveDB, and wrap any storage access in try/catch.
-- Allowed upload file types: .html .js .css .svg .png .jpg .webp .ico .json .webmanifest .woff2 .mp3 .wasm. Anything else (exe, apk, zip, map files…) makes the whole upload fail.
+- Allowed upload file types: .html .htm .js .mjs .css .map .json .webmanifest .txt .xml .svg .png .jpg .jpeg .webp .gif .avif .ico .woff .woff2 .ttf .otf .mp3 .ogg .wav .m4a .mp4 .webm .wasm .glb .gltf. Anything else (exe, apk, zip…) makes the whole upload fail.
 - Max upload 20 MB. A new upload replaces the whole site; the database, settings, orders and bees stay.
 - Use relative paths inside the site (./app.js, not /app.js); the site is served under /s/<name>/.
 - Wallet access works inside Nimiq Pay, in the Webboos browser, and in browsers with the Heylogram Wallet extension. nim.wallet() returns null elsewhere; show a hint instead of failing.
@@ -102,7 +102,7 @@ MUST for leaderboards and anything with prizes:
 - Show names that Hive resolves, never a name field the player typed: `(await db.myName(row.id)).shown`.
 - Build rows with the server id: the SDK returns `{ ...fields, id }`, so a player cannot spoof `id`.
 
-Limits per name: 50,000 reads and 20,000 writes per day, 50 MB total, 1 MB per document, 100 collections, at most 500 results per query.
+Limits per name: 50,000 reads and 20,000 writes per day, 50 MB total, 1 MB per document, 100 collections, at most 500 results per query. Reads without a signed-in session (any visitor) stop at 40,000 a day and at 600 per 10 minutes per visitor (429 `yavas`), so the owner and players always keep the rest.
 
 ## Names
 

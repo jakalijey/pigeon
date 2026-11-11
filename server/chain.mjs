@@ -9,15 +9,16 @@ export async function createChain({ network = 'MainAlbatross', log = console.log
   await client.waitForConsensusEstablished();
   log(`chain: consensus on ${network}, head ${await client.getHeadHeight()}`);
 
-  async function history(address, since = 0) {
+  // max: the API reads any address someone asks for, so it stops after max transactions (the newest pages come first).
+  // The registry reads without max: a partial history could let "first registration wins" pick the wrong owner, so it fails loudly instead.
+  async function history(address, since = 0, max = Infinity) {
     const all = [];
     let startAt = null;
-    // A partial history could let "first registration wins" pick the wrong owner: fail loudly instead of cutting off silently.
     let full = false;
     for (let page = 0; page < 20000; page++) {
       const batch = await client.getTransactionsByAddress(address, since, [], startAt, 500);
       all.push(...batch);
-      if (batch.length < 500) { full = true; break; }
+      if (batch.length < 500 || all.length >= max) { full = true; break; }
       startAt = batch[batch.length - 1].transactionHash;
     }
     if (!full) throw new Error(`history of ${address} exceeds the scan limit; refusing to continue with a partial history`);

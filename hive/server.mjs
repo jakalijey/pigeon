@@ -400,6 +400,14 @@ function ilkZiyaret(req, n) { const g = bugun(); if (g !== sayGun) { sayilan.cle
   const ip = String(req.headers['x-real-ip'] || req.socket.remoteAddress || ''), k = n + '|' + ip; if (sayilan.has(k)) return false; sayilan.add(k); return true; }
 // External site to link: https and public addresses only (so our server does not probe its own internal network)
 // The signed line (or hive.json) on the site proves the owner of <n>.nim links it to <url>; the signature is the proof, not who asks
+// a page someone else serves can be any size: read at most max bytes, then stop
+async function sinirliOku(r, max) {
+  if (!r?.ok || !r.body) return '';
+  const okuyucu = r.body.getReader(), parcalar = []; let boy = 0;
+  try { while (boy < max) { const { done, value } = await okuyucu.read(); if (done) break; parcalar.push(value); boy += value.length; } }
+  finally { okuyucu.cancel().catch(() => {}); }
+  return Buffer.concat(parcalar).subarray(0, max).toString('utf8');
+}
 async function kanitDogrula(n, url) {
   // Proof file: first /.well-known/hive.json; /hive.json for hosts that do not serve dot folders; heylogram.com code sites serve files under /api/d/<name>/
   const kod = url.match(/^https:\/\/([a-z0-9-]+)\.heylogram\.com$/);
@@ -408,10 +416,10 @@ async function kanitDogrula(n, url) {
   // The page itself first: if the bee-counter line carries the signature, one paste is enough (on code sites the page is under /api/d/<name>/)
   let j = null;
   for (const a of [url + '/', ...(kod ? [url + '/api/d/' + kod[1], url + '/api/d/' + kod[1] + '/'] : [])]) {   // a code-site page is served without the trailing / (with / it returns 308)
-    const html = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => r.ok ? r.text() : '').catch(() => '');
-    const k = satirKaniti(html.slice(0, 3 * 1024 * 1024), n); if (k) { j = { mesaj: beklenen, ...k }; break; }
+    const html = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => sinirliOku(r, 3 * 1024 * 1024)).catch(() => '');
+    const k = satirKaniti(html, n); if (k) { j = { mesaj: beklenen, ...k }; break; }
   }
-  if (!j) for (const a of adaylar) { j = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => r.ok ? r.json() : null).catch(() => null); if (j?.mesaj) break; j = null; }
+  if (!j) for (const a of adaylar) { j = await fetch(a, { signal: AbortSignal.timeout(8000), redirect: 'error' }).then((r) => sinirliOku(r, 64 * 1024)).then((s) => { try { return JSON.parse(s); } catch { return null; } }).catch(() => null); if (j?.mesaj) break; j = null; }
   if (!j) return { hata: 'kanit_yok', beklenen };
   const imzalayan = j.mesaj === beklenen ? imzaDogrula(j.mesaj, j.publicKey, j.signature) : null;
   if (!imzalayan || imzalayan !== kompakt(sahipAdresi(n))) return { hata: 'kanit_gecersiz', beklenen };
@@ -425,7 +433,9 @@ function siteBagla(n, url) {
 // Linking without the "Link" button: the first visit to a page that carries the signed line links it (a coding agent can do the
 // whole job once the owner has signed). Only when the cell has no site or another external site, never over an uploaded one;
 // one check per name and origin every 30 minutes, so visits cannot be used to make the server fetch pages again and again.
+// At most 20 such checks a minute in total, whatever origins the visits claim.
 const otoDenenen = new Map();
+let otoDakika = { bas: 0, sayi: 0 };
 async function otoBagla(n, koken) {
   if (!/^https:\/\/[\w.-]+$/.test(koken || '')) return;
   const s = veri.siteler[n];
@@ -433,8 +443,10 @@ async function otoBagla(n, koken) {
   if (veri.kaldirilan?.[n]?.[koken]) return;   // the owner removed this site: the line on that page does not bring it back (only the owner's "Link" does)
   const k = n + '|' + koken, t = Date.now();
   if (t - (otoDenenen.get(k) || 0) < 30 * 60e3) return;
-  if (otoDenenen.size > 5000) otoDenenen.clear();
-  otoDenenen.set(k, t);
+  if (t - otoDakika.bas > 60e3) otoDakika = { bas: t, sayi: 0 };
+  if (++otoDakika.sayi > 20) return;
+  if (otoDenenen.size > 5000) otoDenenen.delete(otoDenenen.keys().next().value);
+  otoDenenen.delete(k); otoDenenen.set(k, t);
   if (!(await disAdresGuvenli(koken))) return;
   if ((await kanitDogrula(n, koken)).ok) siteBagla(n, koken);
 }
@@ -457,7 +469,7 @@ async function siteSun(req, res, n, yol) {
     res.writeHead(r.status, { 'content-type': r.headers.get('content-type') || 'application/json' }); return res.end(Buffer.from(await r.arrayBuffer()));
   }
   const kok = join(SITELER, n); let dosya = normalize(join(kok, yol || 'index.html'));
-  if (!dosya.startsWith(kok)) return gonder(res, 403, { hata: 'yasak' });
+  if (!dosya.startsWith(kok + sep)) return gonder(res, 403, { hata: 'yasak' });
   if (!existsSync(dosya) || statSync(dosya).isDirectory()) dosya = join(kok, 'index.html');      // single-page app
   if (!existsSync(dosya)) return gonder(res, 404, { hata: 'site yok' });
   if (dosya.endsWith('index.html') && ilkZiyaret(req, n)) { const z = veri.ziyaret[n]; if (!z || z.gun !== bugun()) veri.ziyaret[n] = { gun: bugun(), bugun: 1, toplam: (z?.toplam || 0) + 1 }; else { z.bugun++; z.toplam++; } kirli = true; }
@@ -479,6 +491,14 @@ function kopruEkle(html) {
 // per-IP per-minute counter (nginx sets X-Real-IP itself); the map is reset every minute
 const HIZ = { kod: 30, imza: 20 }, hizSayac = new Map();
 setInterval(() => hizSayac.clear(), 60000).unref();
+// Reads without a session (anyone): at most 600 per 10 minutes per address and name, so one visitor cannot use up a cell's day
+const acikOkuma = new Map();
+function acikOkumaAsimi(req, n) {
+  const k = n + '|' + String(req.headers['x-real-ip'] || req.socket.remoteAddress || ''), t = Date.now();
+  let x = acikOkuma.get(k);
+  if (!x || t - x.bas > 600e3) { if (acikOkuma.size > 50000) acikOkuma.clear(); x = { bas: t, sayi: 0 }; acikOkuma.set(k, x); }
+  return ++x.sayi > 600;
+}
 function hizAsimi(req, tur) {
   const k = tur + '|' + String(req.headers['x-real-ip'] || req.socket.remoteAddress || '');
   const n = (hizSayac.get(k) || 0) + 1; if (hizSayac.size < 200000) hizSayac.set(k, n);
@@ -671,7 +691,9 @@ const sunucu = createServer(async (req, res) => {
         if (kuralYolu) { if (req.method !== 'PUT') return gonder(res, 200, DB.kural(n, k)); if (!kim.sahip) return gonder(res, 401, { hata: 'giris_gerekli' }); return gonder(res, 200, DB.kuralYaz(n, k, JSON.parse(await govdeOku(req, 16000) || '{}'))); }
         if (req.method === 'GET') {
           if (!DB.okumaIzni(n, k, kim)) return gonder(res, 403, { hata: 'okuma_izni_yok' });
-          if (!DB.say(n, 'okuma')) return gonder(res, 429, { hata: 'gunluk_okuma_siniri', sinir: DB.SINIR.gunlukOkuma });
+          const acik = !kim.sahip && !kim.oyuncu;
+          if (acik && acikOkumaAsimi(req, n)) return gonder(res, 429, { hata: 'yavas' });
+          if (!DB.say(n, 'okuma', acik ? 0.8 : 1)) return gonder(res, 429, { hata: 'gunluk_okuma_siniri', sinir: DB.SINIR.gunlukOkuma });
           if (id) { const b = DB.belge(n, k, id); return b == null ? gonder(res, 404, { hata: 'belge_yok' }) : gonder(res, 200, { id, veri: b }); }
           const where = u.searchParams.getAll('where').map((w) => { const [alan, op, ...d] = w.split(','); let deger = d.join(','); try { deger = JSON.parse(deger); } catch {} return [alan, op, deger]; });
           return gonder(res, 200, DB.sorgu(n, k, { where, orderBy: u.searchParams.get('orderBy') || undefined, yon: u.searchParams.get('yon') || 'asc', limit: u.searchParams.get('limit') }));
@@ -732,7 +754,7 @@ const sunucu = createServer(async (req, res) => {
       if (yasak.length) return gonder(res, 400, { hata: 'dosya_turu_yasak', dosyalar: yasak.slice(0, 10) });
       if (dosyalar.some((f) => !normalize(join(SITELER, 'x', f.ad)).startsWith(join(SITELER, 'x') + sep))) return gonder(res, 400, { hata: 'guvensiz_yol' });
       const gecici = join(SITELER, '.' + n + '-' + Date.now()), yer = join(SITELER, n);
-      for (const f of dosyalar) { const hedef = normalize(join(gecici, f.ad)); if (!hedef.startsWith(gecici)) return gonder(res, 400, { hata: 'guvensiz_yol' }); mkdirSync(dirname(hedef), { recursive: true }); writeFileSync(hedef, f.icerik); }
+      for (const f of dosyalar) { const hedef = normalize(join(gecici, f.ad)); if (!hedef.startsWith(gecici + sep)) return gonder(res, 400, { hata: 'guvensiz_yol' }); mkdirSync(dirname(hedef), { recursive: true }); writeFileSync(hedef, f.icerik); }
       rmSync(yer, { recursive: true, force: true }); renameSync(gecici, yer);
       const baslik = (readFileSync(join(yer, 'index.html'), 'utf8').match(/<title>([^<]{1,60})<\/title>/i) || [])[1] || n + '.nim';
       veri.siteler[n] = { ...(veri.siteler[n] || {}), baslik, yayin: Date.now(), dis: null, repo: null }; kirli = true;
@@ -808,6 +830,8 @@ const sunucu = createServer(async (req, res) => {
     // storage: key-value per name, with QUOTA
     if ((m = p.match(/^\/api\/depo\/([a-z0-9-]{1,32})(?:\/([a-z0-9_.-]{1,64}))?$/))) {
       const n = m[1], k = m[2]; if (!bilinen(n)) return gonder(res, 404, { hata: 'isim yok' });
+      // reads without the owner's session stop at 80% of the day and per visitor, and a refused one is not counted
+      if (req.method === 'GET' && !yetkili(req, n) && (acikOkumaAsimi(req, n) || islemBugun(n) >= KOTA.gunlukIslem * 0.8)) return gonder(res, 429, { hata: 'yavas' });
       if (islemBugun(n) >= KOTA.gunlukIslem) return gonder(res, 429, { hata: 'gunluk_kota', sinir: KOTA.gunlukIslem });
       islemSay(n);
       if (req.method === 'GET') return gonder(res, 200, k ? { [k]: veri.depo[n]?.[k] ?? null } : (veri.depo[n] || {}));
