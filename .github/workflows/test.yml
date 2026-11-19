@@ -20,3 +20,32 @@ jobs:
           node-version: 22
       # the rule tests need no packages: rules.mjs and vaults.mjs use only Node itself
       - run: npm test
+
+  sdk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # fake wallet and fake server: no network, no packages
+      - run: npm test
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # the web build takes the Identicons from server/node_modules
+      - run: npm ci
+        working-directory: server
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: test -s web/dist/index.html && test -f web/dist/manifest.json

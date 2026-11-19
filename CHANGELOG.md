@@ -2,7 +2,17 @@
 
 What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> always runs the latest version.
 
-## 11 November 2026: Limits for heavy reads
+Versions: the app and its server are numbered here (0.x while the name rules can still grow). The SDK has its own number on npm as [`pigeon-nim`](https://www.npmjs.com/package/pigeon-nim); a release that changes it says so.
+
+## 0.9.0 (19 November 2026): Security policy, contributing guide, more tests
+
+- **Security.** [SECURITY.md](SECURITY.md): how to report a problem privately (pigeon@heylogram.com), what is in scope, and the known limits.
+- **Contributing.** [CONTRIBUTING.md](CONTRIBUTING.md): set up, tests, and the rules a change must keep.
+- **Tests on every push** now cover the SDK too (`sdk/sdk.test.mjs`: names, payments, sub-names, sign-in and the database client, with a fake wallet and a fake server) and check that the web app builds.
+- **README.** "Run it" in the right order: install the server, build the web app, then start the server.
+- **HIVE80** is gone from the roadmap list; the code ended on 11 November 2026.
+
+## 0.8.1 (11 November 2026): Limits for heavy reads
 
 - **Pigeon history reads.** Any address the API is asked about is read up to its newest 5,000 transactions, and at most ten vault scans run in the background at once. The name registry itself is still read in full.
 - **Hive site checks.** A page fetched to check a site's signature is read up to 3 MB (a proof file up to 64 KB), and at most 20 such checks run a minute.
@@ -10,7 +20,7 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 - **Hive in this repository** now matches the live server (`api.heylogram.com` addresses in the SDK copies and guides). AGENTS.md lists every file type an upload accepts, and the owner sign-in test uses a sample name.
 - **README.** The features that shipped on 25 October moved from the roadmap to "Done early".
 
-## 11 November 2026: Vault owners checked, tests on every push
+## 0.8.0 (11 November 2026): Vault owners checked, tests on every push
 
 - **Vault owner, checked.** A vault's refund address now counts only when that wallet created the vault, itself or by extending one of its own vaults. Every name registered so far keeps its owner.
 - **Addresses.** Requests and splits check the full Nimiq address (alphabet and checksum), like the name rules and the SDK.
@@ -18,27 +28,27 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 - **Tests on GitHub.** Every push runs the server tests (`.github/workflows/test.yml`).
 - **README.** `/api/subs`, the `ana:` note and given sub-names are described exactly as the code works.
 
-## 10 November 2026: Nimiq Pay vaults that were extended
+## 0.7.0 (10 November 2026): Nimiq Pay vaults that were extended, SDK 1.0.0 on npm
 
 - **Vault owner from the vault itself.** Nimiq Pay keeps spendable NIM in an HTLC vault and, before it times out, moves it into a new vault created by the old one. Pigeon now reads the owner from the refund address written in the vault, so a payment from an extended vault is credited to the right wallet, and a name can never be given to a vault address.
 - **Balances.** Extended vaults are followed to the live one, so `/api/vaults/:address` and `/api/balance/:address` show the full spendable amount.
 - **Tests.** `server/vaults.test.mjs` covers direct, extended, refunded and foreign vaults.
 - **SDK on npm.** `npm install pigeon-nim` gives `nim.js` and `hive-db.js` with TypeScript types. The SDK and the docs now use `api.heylogram.com/pigeon` and `api.heylogram.com/hive`; the old `signal.heylogram.tv` addresses keep working.
 
-## 6 November 2026: Choose the name you show
+## 0.6.0 (6 November 2026): Choose the name you show
 
 - **One-letter names.** They now have their own price: 100,000 NIM. Other prices stay the same.
 - **One address, many names, your choice.** If you own more than one name, Pigeon's ring screen lets you pick the one that shows for your address in every app. It is a 1 luna transaction with the note `ana:<name>`. Your other names stay yours and keep receiving payments.
 - **SDK.** `allNames(address)` and `setMainName(name)`. `/api/address/:address` now also returns `names`.
 
-## 30 October 2026: Hive one tap away
+## 0.5.0 (30 October 2026): Hive one tap away
 
 - **Hive stamp.** A name owner gets a fifth stamp next to Get ring that opens the name's cell in Hive. The five stamps share one row; on a phone set to larger text, a label that doesn't fit shrinks until it does.
 - **The live card leads to Hive.** "name.nim is live" now opens the cell in Hive (visits, bees, the till); the site itself is the "Open the site" link under it. For the pigeon name the site was Pigeon itself, so the card seemed to do nothing.
 - **Right after the ring.** The welcome card says it plainly: upload your site, or link the one you already have with one line.
 - **Desktop scene.** On wide screens a small village sits behind the app; at night the child walks home and the sheep go to the barn.
 
-## 25 October 2026: Free names for builders
+## 0.4.0 (25 October 2026): Free names for builders
 
 - **Gift code HIVE80.** The first 80 builders get a free `.nim` name with 5 or more letters: type the name in Pigeon, enter `HIVE80`, sign a 1 luna transaction. One per wallet, until 11 November 2026. The campaign is announced on chain by the registry.
 - **Hive on phones.** The owner tabs moved from the bottom to the top of the screen. In Nimiq Pay the Mini App window reaches behind Android's navigation bar and reports no bottom inset, so a bottom bar sat under the system buttons. The selected tab stays in view.
@@ -52,7 +62,7 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 - **Public usage numbers.** `GET /api/stats` shows names, owners, requests, paid requests, splits and distinct payers.
 - **README.** Two pictures at the top: one name, one home; every home, one window. README now opens with what Pigeon adds to Nimiq, what it costs and why it pays in NIM.
 
-## 24 October 2026: Every name gets a home
+## 0.3.0 (24 October 2026): Every name gets a home
 
 Video: <https://youtu.be/vo6qgR4q9zA>
 
@@ -68,7 +78,7 @@ Video: <https://youtu.be/vo6qgR4q9zA>
 - **Roadmap.** The November item "pay at the shop" arrived early.
 - **The registry can name itself.** It cannot pay itself, so it sends 1 luna with `nim:<name>` to the burn address, the same way gift campaigns are announced. Only the registry can do this; reserved words stay blocked. The registry is now `heylogram.nim`.
 
-## 18 October 2026: Rings and accounts
+## 0.2.0 (18 October 2026): Rings and accounts
 
 - The leg ring: engraved name, the owner's Identicon seal and registration number. Tap it to replay the engraving.
 - Names paid from a Nimiq Pay vault belong to the vault's creator, so every name stays payable.
@@ -76,7 +86,7 @@ Video: <https://youtu.be/vo6qgR4q9zA>
 - The action button stays above the keyboard.
 - Roadmap with dated updates.
 
-## 17 October 2026: First release
+## 0.1.0 (17 October 2026): First release
 
 Video: <https://youtu.be/gAgeB7Ck_w8>
 

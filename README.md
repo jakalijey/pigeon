@@ -82,22 +82,32 @@ A request has a short id. The payer's wallet sends the payment with the note `od
 - **Notes are public.** Notes are written on chain, and the app says so before you send.
 - **Server limits.** The server validates every input (addresses with their Nimiq checksum), caps body size and rate limits requests.
 
+Found a problem? Please report it privately: [SECURITY.md](SECURITY.md). It also lists the known limits.
+
 ## Run it
+
+You need Node.js 20 or newer. Install the server first: the web build takes the Identicons from `server/node_modules`.
 
 ```bash
 cd server
 npm install
 cp config.example.json config.json
 npm test
-npm start
 ```
 
-The web app is plain HTML, CSS and JavaScript in `web/`. `web/build.mjs` bundles everything (including the Identicons and the QR code library) into one `web/dist/index.html` next to the icons and the manifest. Build it before starting the server, which serves `web/dist`:
+The web app is plain HTML, CSS and JavaScript in `web/`. `web/build.mjs` bundles everything (including the Identicons and the QR code library) into one `web/dist/index.html` next to the icons and the manifest. The server serves `web/dist`, so build it before you start the server:
 
 ```bash
-cd web
+cd ../web
 npm install
 npm run build
+```
+
+Start the server:
+
+```bash
+cd ../server
+npm start
 ```
 
 Set `registry` in `config.json` to the address that receives name registrations. Without it, the app still sends, requests and splits, and the ring screen says the registry opens soon. The server connects to Nimiq mainnet as a light client. The first sync takes a few seconds, and the API answers `503 syncing` until then.
@@ -175,7 +185,6 @@ Pigeon keeps growing after the competition. The first three updates have dates; 
 - Recent people: the names you paid and who paid you, one tap to pay again.
 - Look-alike warning: names that look alike (`rnando` and `mando`) show both Identicons before you pay.
 - A printable counter card for every name: the name, its Identicon and a QR code of its address.
-- Free names for builders: gift code `HIVE80`, announced on chain by the registry.
 - Public usage numbers at `/api/stats`.
 - On a computer: Mini Apps run in a desktop browser with the Heylogram Wallet extension, and names with a site open in the Webboos browser.
 
@@ -185,6 +194,10 @@ People who live together pay into one transparent fund for something they need, 
 ## Built with
 
 [@nimiq/core](https://github.com/nimiq/core-rs-albatross) (Apache-2.0), [@nimiq/identicons](https://github.com/nimiq/identicons) (ISC) and the Nimiq Pay mini app provider. No framework: plain HTML, CSS and JavaScript, bundled with esbuild for hosting. QR codes by [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT).
+
+## Contributing
+
+Issues and pull requests are welcome. How to set up, test and send a change: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
