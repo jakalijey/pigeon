@@ -29,6 +29,8 @@ cd sdk && npm test       # nim.js and hive-db.js, with a fake wallet and a fake 
 cd web && npm run build  # the app bundles without errors
 ```
 
+Hive has its own tests against a local server in demo mode; see [hive/README.md](hive/README.md#tests). GitHub runs `test-db.mjs` and `test-giris.mjs`.
+
 Add a test when you change a rule or the SDK. The tests need no network and no real wallet.
 
 ## What to keep in mind

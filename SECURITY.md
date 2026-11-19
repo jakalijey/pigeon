@@ -32,7 +32,7 @@ Please test against your own names and small amounts. Do not try to take down th
 - **Fixed registry address.** The SDK sends registry notes only to the address written in `nim.js`; no server answer can change it.
 - **Checked addresses.** Every address is checked with the Nimiq alphabet and checksum before money or a name goes to it.
 - **Vault owners.** A Nimiq Pay vault counts for its refund address only when that wallet created the vault.
-- **Tests on every push** for the registry rules, vault owners and the SDK (`.github/workflows/test.yml`).
+- **Tests on every push** for the registry rules, vault owners, the SDK, and Hive's database rules and sign-in (`.github/workflows/test.yml`).
 
 ## Known limits
 

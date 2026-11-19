@@ -8,7 +8,7 @@ Versions: the app and its server are numbered here (0.x while the name rules can
 
 - **Security.** [SECURITY.md](SECURITY.md): how to report a problem privately (pigeon@heylogram.com), what is in scope, and the known limits.
 - **Contributing.** [CONTRIBUTING.md](CONTRIBUTING.md): set up, tests, and the rules a change must keep.
-- **Tests on every push** now cover the SDK too (`sdk/sdk.test.mjs`: names, payments, sub-names, sign-in and the database client, with a fake wallet and a fake server) and check that the web app builds.
+- **Tests on every push** now cover the SDK too (`sdk/sdk.test.mjs`: names, payments, sub-names, sign-in and the database client, with a fake wallet and a fake server) and check that the web app builds. Hive's database and sign-in tests run against a local Hive in demo mode.
 - **README.** "Run it" in the right order: install the server, build the web app, then start the server.
 - **HIVE80** is gone from the roadmap list; the code ended on 11 November 2026.
 
