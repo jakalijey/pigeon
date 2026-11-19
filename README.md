@@ -155,26 +155,28 @@ The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents 
 
 ## Roadmap
 
-Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
+Pigeon keeps growing after the competition. Shipped items are struck through with the version they came in ([CHANGELOG](CHANGELOG.md)); the rest have a target date. Dates are targets, not promises: if one slips, it moves here in the open.
 
-**November 2026: Faces, languages and receipts (done)**
-- Spanish, next to English and Turkish (the EN · ES · TR button, or the language of Nimiq Pay).
-- Profiles: a display name and a short line on every name, signed by the owner in Hive (My page). Pigeon shows them under the name when you pay or get a letter, never instead of it.
-- A menu template for cafes and stalls in Hive: list what you sell with prices in NIM (the template fills the usual items, you write the prices) and show it to visitors as a menu board.
-- Receipts: after a payment, on the link of every paid request, for Hive shop orders and for QR till sales, each payment links to its transaction on chain (a receipt, not an invoice).
-- A usage chart in the hive window (tap the counters): new names per week, with Pigeon's paid requests and distinct payers. Payments per week and gift names shown apart come with the next server release.
+**November 2026: Faces, languages and receipts**
+- ~~Spanish, next to English and Turkish.~~ Done in 0.10.0 (19 November 2026): the EN · ES · TR button, or the language of Nimiq Pay.
+- ~~Profiles: a display name and a short line on every name.~~ Done in 0.11.0 (19 November 2026): signed by the owner in Hive (My page); Pigeon shows them under the name, never instead of it.
+- ~~A menu template for cafes and stalls in Hive.~~ Done in 0.11.0 (19 November 2026): products with prices in NIM, a café / stall template, and a menu board for visitors.
+- ~~Receipts: a page for every paid request, order or till sale, linked to its transaction on chain.~~ Done in 0.10.0 and 0.11.0 (19 November 2026): paid requests in Pigeon, shop orders and QR till sales in Hive.
+- ~~A usage chart in the hive window: names per week.~~ Done in 0.11.0 (19 November 2026): tap the counters.
+- Payments and distinct payers per week in the same chart, gift names shown apart. Target: 28 November 2026 (needs a server release).
 
 **December 2026: Names that move**
-- Transfer a name to another address, or list it for sale at a price.
-- Fair registration: commit and reveal, so a pending registration cannot be copied, and automatic refunds for losing payments.
+- Transfer a name to another address. Target: 10 December 2026.
+- List a name for sale at a price, paid wallet to wallet. Target: 17 December 2026.
+- Fair registration: commit and reveal, so a pending registration cannot be copied, and automatic refunds for losing payments. Target: 31 December 2026.
 
 **January 2027: Money together**
-- Community jar: a group collects for a shared goal and everyone sees who paid.
-- Repeating requests for monthly dues or a shared rent, with a reminder when a part is late.
-- Shared tab: who owes whom in a flat or on a trip, settled by name. Pigeon only keeps the record; money goes wallet to wallet.
-- Payment events for developers: get "a payment for this name arrived" without running your own chain watcher.
-- USDT by name, once USDT payments are back in Nimiq Pay (gas is paid from the user's own wallet).
-- An open note standard: the `nim:` rules and the lookup API in one document, so any wallet can read the same names.
+- Community jar: a group collects for a shared goal and everyone sees who paid. Target: 8 January 2027.
+- Repeating requests for monthly dues or a shared rent, with a reminder when a part is late. Target: 15 January 2027.
+- Shared tab: who owes whom in a flat or on a trip, settled by name. Pigeon only keeps the record; money goes wallet to wallet. Target: 22 January 2027.
+- Payment events for developers: get "a payment for this name arrived" without running your own chain watcher. Target: 29 January 2027.
+- An open note standard: the `nim:` rules and the lookup API in one document, so any wallet can read the same names. Target: 31 January 2027.
+- USDT by name, once USDT payments are back in Nimiq Pay (gas is paid from the user's own wallet). No date: it waits for Nimiq Pay.
 
 **Done early (October 2026)**
 - Sub-names such as `cafe.pigeon.nim`, given by the owner of the parent name or claimed by players when the owner opens them.
