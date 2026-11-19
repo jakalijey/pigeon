@@ -157,13 +157,12 @@ The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents 
 
 Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
 
-**November 2026: Faces, languages and receipts**
-- Done: Spanish, next to English and Turkish (the EN · ES · TR button, or the language of Nimiq Pay).
-- Done: receipts for payments in Pigeon. After you pay, and on the link of every paid request, each payment shows who paid, how much and when, linked to its transaction on chain (a receipt, not an invoice).
-- Profiles: a display name and a short line on every name.
-- A menu template for cafes and stalls in Hive.
-- Receipts for Hive orders and till sales, the same way.
-- A usage chart in the hive window: names, payments and distinct payers per week, gift names shown apart.
+**November 2026: Faces, languages and receipts (done)**
+- Spanish, next to English and Turkish (the EN · ES · TR button, or the language of Nimiq Pay).
+- Profiles: a display name and a short line on every name, signed by the owner in Hive (My page). Pigeon shows them under the name when you pay or get a letter, never instead of it.
+- A menu template for cafes and stalls in Hive: list what you sell with prices in NIM (the template fills the usual items, you write the prices) and show it to visitors as a menu board.
+- Receipts: after a payment, on the link of every paid request, for Hive shop orders and for QR till sales, each payment links to its transaction on chain (a receipt, not an invoice).
+- A usage chart in the hive window (tap the counters): new names per week, with Pigeon's paid requests and distinct payers. Payments per week and gift names shown apart come with the next server release.
 
 **December 2026: Names that move**
 - Transfer a name to another address, or list it for sale at a price.

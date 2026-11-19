@@ -141,7 +141,21 @@ if (window.nimiq || window.nimiqPay || window.ReactNativeWebView) markPay();
 const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const API = LOCAL ? '' : 'https://signal.heylogram.tv/pigeonapi';
 const SITE = 'https://pigeon.heylogram.com';
-const HIVE_SITE = 'https://hive.heylogram.com';   // every name gets a cell there: site, shop, QR till
+const HIVE_SITE = 'https://hive.heylogram.com';
+// Profile: the display name and short line a name's owner signed in Hive (settings "profil.ad" and "tanitim").
+// Shown small, under the .nim name and never instead of it: a display name can say anything, the ring cannot.
+const HIVE_API = 'https://signal.heylogram.tv/kovanapi';
+const profiles = new Map();
+function profileOf(name) {
+  const n = String(name || '').split('.')[0];
+  if (!n) return Promise.resolve(null);
+  if (!profiles.has(n)) profiles.set(n, fetch(`${HIVE_API}/api/ayar/${encodeURIComponent(n)}`).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    const a = j?.ayar || {}, ad = typeof a['profil.ad'] === 'string' ? a['profil.ad'].trim().slice(0, 40) : '', line = typeof a.tanitim === 'string' ? a.tanitim.trim().slice(0, 160) : '';
+    return ad || line ? { ad, line } : null;
+  }).catch(() => null));
+  return profiles.get(n);
+}
+const profileHtml = (pr) => pr ? `<span class="prof">${pr.ad ? `<b>${esc(pr.ad)}</b>` : ''}${pr.line ? `<small>${esc(pr.line)}</small>` : ''}</span>` : '';   // every name gets a cell there: site, shop, QR till
 const SDK_URL = 'https://github.com/jakalijey/pigeon/tree/main/sdk';
 const PAY_URL = 'https://github.com/jakalijey/pigeon/tree/main/sdk#a-pay-button-nim-pay';
 const FREE = () => Date.now() < Date.UTC(2026, 10, 11, 23, 59, 59);   // free site upload offer; after it the cards drop the "free" line
@@ -501,6 +515,7 @@ ${recent.length ? `<div class="recent"><small>${esc(T.recent)}</small><div>${rec
       $('#addr').textContent = r?.address ? short(r.address) : '';
       $('#check').innerHTML = (r?.moved ? `<span class="ok warn">${esc(T.moved)}</span> ` : '') + (!r ? '' : r.missing ? `<span class="ok warn">${esc(T.noName)}</span>` : r.plain ? `<span class="ok warn">${esc(T.plain)}</span>` : `<span class="ok">${CHECK}${esc(T.ringOk)}</span>`);
       paintIdenticons(app()); upd();
+      if (r?.name && !r.missing) profileOf(r.name).then((pr) => { if (my === seq && pr) $('#check').insertAdjacentHTML('beforeend', profileHtml(pr)); });
       const al = $('#alike'); al.innerHTML = '';
       const other = r?.address && r.name && !isAddr(v) ? await lookAlike(r.name, r.address) : null;
       if (my !== seq || !other) return;
@@ -578,10 +593,11 @@ function incoming(r) {
   const left = Math.max(0, r.value - r.paid);
   const ring = r.toName ? `<span class="ok">${CHECK}${esc(T.ringIs(r.toName + '.nim'))}</span>` : `<span class="ok warn">${esc(T.noRingWarn)}</span>`;
   screen(`<div class="sill"><div class="frame"></div><div class="board"></div><div class="g">${flying()}</div></div>
-<div class="open"><div class="from">${idn(r.to, 26)}<b>${esc(from)}</b> ${esc(T.sentYou)}</div>${r.note ? `<div class="hand">${esc(r.note)}</div>` : ''}<b class="t">${nim(left || r.value)} NIM</b>${ring}
+<div class="open"><div class="from">${idn(r.to, 26)}<b>${esc(from)}</b> ${esc(T.sentYou)}</div><div id="fromProf"></div>${r.note ? `<div class="hand">${esc(r.note)}</div>` : ''}<b class="t">${nim(left || r.value)} NIM</b>${ring}
 ${r.status === 'paid' ? `<span class="ok">${CHECK}${esc(T.alreadyPaid)}</span>` : ''}<small class="hint mono">${esc(short(r.to))}</small></div>${r.payments.length ? paidSlip(r) : ''}`,
   r.status === 'paid' ? `<button class="btn main" id="no">${esc(T.done)}</button>` : `<button class="btn" id="no">${esc(T.notNow)}</button><button class="btn main" id="pay">${nim(left)} NIM ${esc(T.pay)}</button>`);
   $('#no').onclick = () => go('home');
+  if (r.toName) profileOf(r.toName).then((pr) => { const el = $('#fromProf'); if (el && pr) el.innerHTML = profileHtml(pr); });
   const pay = $('#pay');
   if (pay) pay.onclick = async () => {
     pay.disabled = true; pay.textContent = T.sending;

@@ -352,3 +352,6 @@ html.typing #app{padding-bottom:96px}
 /* receipt: payments of a request, each linked to its transaction on chain */
 .receiptslip{margin-top:12px}.receiptslip .rt{font:800 12px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.receiptslip dd small{display:block;color:var(--muted);font-weight:500;font-size:12px}
 .txl{display:inline-block;margin-top:2px;color:var(--orangeD);text-decoration:none;font-size:12px}.txl:hover{text-decoration:underline}
+/* profile from Hive: display name and short line, always under the .nim name */
+.prof{display:flex;flex-direction:column;align-items:center;gap:1px;margin-top:6px;text-align:center}.prof b{font-size:14px}.prof small{font-size:12px;color:var(--muted);max-width:32ch}
+#check .prof{width:100%}

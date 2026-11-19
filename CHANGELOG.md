@@ -4,6 +4,14 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 
 Versions: the app and its server are numbered here (0.x while the name rules can still grow). The SDK has its own number on npm as [`pigeon-nim`](https://www.npmjs.com/package/pigeon-nim); a release that changes it says so.
 
+## 0.11.0 (19 November 2026): Profiles, menus, receipts in Hive, usage chart
+
+- **Profiles.** A name's owner can sign a display name next to the short intro in Hive (My page). Hive shows it above the name; Pigeon shows the display name and the intro under the name of the person you pay or who sent you a letter. It never replaces the `.nim` name: a display name can say anything, the ring cannot.
+- **Menus.** My page has a products and menu editor: name, price in NIM and optional stock per item, saved as the signed `urunler` setting that Hive's sales and the SDK already read. A café / stall template fills the usual items without prices; the owner writes them. "Show as a menu" turns the products into a one-line menu board for visitors.
+- **Receipts in Hive.** The vault tab lists the cell's shop orders, and paid orders and QR till sales link their transaction on nimiq.watch.
+- **Usage chart.** Tapping the counters in the hive window opens new names per week (from registration times on chain) with Pigeon's public totals of paid requests and distinct payers.
+- **Server unchanged.** Everything above runs on the existing APIs; the Pigeon and Hive servers were not redeployed.
+
 ## 0.10.0 (19 November 2026): Spanish and receipts
 
 - **Spanish.** Pigeon speaks English, Spanish and Turkish. It follows the language of Nimiq Pay or the browser; the EN · ES · TR button switches it, and the choice is kept.

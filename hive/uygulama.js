@@ -160,7 +160,8 @@ function vitrinOku(ayar, p) {   // shop window from signed settings; without set
   const a = ayar?.ayar || {}, ham = a['vitrin.kartlar'];
   let kartlar = typeof ham === 'string' ? (ham === 'yok' ? [] : ham.split(',').map((x) => x.trim()).filter((x, i, d) => KART_TUM.includes(x) && d.indexOf(x) === i)) : ['site', 'ari'];
   if (!p.site) kartlar = kartlar.filter((k) => k !== 'site');
-  return { kartlar, vurgu: VURGU[a['vitrin.vurgu']] ? a['vitrin.vurgu'] : 'amber', tanitim: typeof a.tanitim === 'string' ? a.tanitim.slice(0, 160) : '', kapak: a['vitrin.kapak'] === 'gorsel' ? 'gorsel' : 'canli',
+  return { kartlar, vurgu: VURGU[a['vitrin.vurgu']] ? a['vitrin.vurgu'] : 'amber', tanitim: typeof a.tanitim === 'string' ? a.tanitim.slice(0, 160) : '',
+    ad: typeof a['profil.ad'] === 'string' ? a['profil.ad'].trim().slice(0, 40) : '', menu: a['vitrin.urunler'] === 'menu', kapak: a['vitrin.kapak'] === 'gorsel' ? 'gorsel' : 'canli',
     isimler: a['vitrin.arilar'] !== 'gizli' };   // the owner may keep the bee names off this page; the counts always show
 }
 // the "N bees" hexagon opens / closes the names list; closed at first (a long list crowds a phone screen)
@@ -247,6 +248,7 @@ async function odaCiz(yeni) {
   if ($('ariL')) { if (!$('ariL').hidden) arilariYaz(p.isim); const dug = $('odaIc').querySelector('.ari-ac'); if (dug) ariAcBagla(dug, p); }
   if ($('alanListe')) alanlariYaz(p);
   if ($('odemeK')) odemeBagla(p);
+  if ($('siparisListe')) siparisleriYaz(p);
   // content arrives in order
   [...$('odaIc').querySelectorAll('.a-gel')].forEach((c, i) => { c.style.animationDelay = (80 + i * 70) + 'ms'; });
   kasaDoldur(odaDurum);
@@ -315,6 +317,10 @@ const ustSerit = (sahip) => `<div class="a-ust"><button class="a-geri" data-is="
   <button class="a-tema a-dil" data-is="dil" aria-label="${L('Dil', 'Language')}">${dil === 'tr' ? 'EN' : 'TR'}</button><button class="a-tema" data-is="tema" aria-label="${L('Gece / gündüz', 'Night / day')}">${temaSimge()}</button></div>`;
 
 // ---- OUTER FACE: the shop window a visitor sees
+// menu style (cafes, stalls): name and price on one line, like a board on the wall
+function menuSatirlari(enCok) {
+  return `<div class="a-menu">${(odaDurum?.urunler || []).slice(0, enCok).map((u) => `<div class="a-menu-s${u.kalan === 0 ? ' bitti' : ''}"><b>${esc(u.ad)}</b><i></i><span>${sayiYaz(u.fiyat)} NIM</span></div>`).join('')}</div>`;
+}
 function urunKartlari(p, enCok) {
   return (odaDurum?.urunler || []).slice(0, enCok).map((u) => { const g = gorsel(p, 'urun-' + u.id);
     return `<div class="a-urun">${g ? `<img src="${esc(g)}" alt="" loading="lazy" />` : `<i class="a-urun-bos">${esc(String(u.ad || '?').slice(0, 1).toUpperCase())}</i>`}<b>${esc(u.ad)}</b><span>${sayiYaz(u.fiyat)} NIM${u.kalan != null ? ` · ${u.kalan === 0 ? L('tükendi', 'sold out') : u.kalan + L(' kaldı', ' left')}` : ''}</span></div>`; }).join('');
@@ -327,19 +333,19 @@ function disYuz({ p, v, yeni }) {
       ${site.yayin ? `<span class="a-etiket">${L('Güncellendi: ', 'Updated: ')}${gunOnce(site.yayin)}</span>` : ''}</div>`,
     // the same three hexagons as everywhere (the old strip of small cells looked like another counter)
     ari: () => `<div class="a-sahne-ari">${KUCUK.ari()}</div>`,
-    urun: () => `<div class="a-sahne-urun"><div class="a-urunler">${urunKartlari(p, 99)}</div>${site?.adres ? `<a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener" data-hl-misafir="1">${L('Satın almak için siteye git', 'Go to the site to buy')}</a>` : ''}</div>`,
+    urun: () => `<div class="a-sahne-urun">${v.menu ? menuSatirlari(99) : `<div class="a-urunler">${urunKartlari(p, 99)}</div>`}${site?.adres ? `<a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener" data-hl-misafir="1">${L('Satın almak için siteye git', 'Go to the site to buy')}</a>` : ''}</div>`,
     kasa: () => `<div class="a-sahne-kasa">${jar(0)}<div><b id="bak">– <span>NIM</span></b><small>${L('Sahibi kasasını herkese açtı. Para Hive\'da durmaz; kavanoz sahibinin kendi cüzdanı.', 'The owner made the vault public. Hive never holds money; the jar is the owner\'s own wallet.')}</small></div></div>`,
   };
   const KUCUK = {
     site: () => '',
     ari: () => `<div class="a-muhur">${ariAltigen(p, v.isimler, L('arı', 'bees'))}<div><b>${p.ziyaret?.bugun || 0}</b><small>${L('bugün', 'today')}</small></div><div><b>${sayiYaz(p.ziyaret?.toplam || 0)}</b><small>${L('ziyaret', 'visits')}</small></div></div>${v.isimler ? '<div class="ariL" id="ariL" hidden></div>' : ''}`,
-    urun: () => `<div class="a-urunler kucuk">${urunKartlari(p, 3)}</div>`,
+    urun: () => v.menu ? menuSatirlari(6) : `<div class="a-urunler kucuk">${urunKartlari(p, 3)}</div>`,
     kasa: () => `<div class="a-kasa-kucuk">${jar(0)}<div><b id="bak">– <span>NIM</span></b><small>${L('Sahibi kasasını herkese açtı', 'The owner made the vault public')}</small></div></div>`,
   };
   return ustSerit(false) + `<section class="a-vitrin ${ks.length ? '' : 'tek'}">
     <div class="a-kim a-gel">
       <div class="a-hex"><i class="idn">${idSvg.get(p.adres) || ''}</i>${p.sira ? `<span class="a-sira">№${p.sira}</span>` : ''}</div>
-      <h1 class="a-ad">${esc(p.isim)}<em>.nim</em></h1>
+      ${v.ad ? `<div class="a-profil">${esc(v.ad)}</div>` : ''}<h1 class="a-ad">${esc(p.isim)}<em>.nim</em></h1>
       <div class="a-alt">${site ? `<span><i></i>${L('Site yayında', 'Site is live')}</span>` : ''}${gun ? `<span>${L('Kovanda ', 'In the hive for ')}${gun}${L(' gündür', gun === 1 ? ' day' : ' days')}</span>` : ''}</div>
       ${yeni ? `<p class="a-tanitim">${L('Petek balmumundan yeni doğdu. İlk arı sensin. Peteğine girmek için cüzdanınla imza at.', 'Your cell was just born from wax. You are its first bee. Sign with your wallet to step inside.')}</p>` : v.tanitim ? `<p class="a-tanitim">${esc(v.tanitim)}</p>` : ''}
       <div class="a-eylem">${site?.adres ? `<a class="a-btn ana" href="${esc(siteAdres(site.adres))}" target="_blank" rel="noopener" data-hl-misafir="1">${L('Siteyi aç', 'Open site')}</a>` : ''}${yeni ? `<button class="a-btn ana" data-is="giris">${L('Cüzdanla gir', 'Sign in with wallet')}</button>` : ''}<button class="a-btn ikinci" data-is="paylas">${L('Paylaş', 'Share')}</button>${p.ornek ? '' : `<button class="a-btn ikinci" data-is="bahsis">${L('Bahşiş', 'Tip')}</button>`}</div>
@@ -360,6 +366,7 @@ function icYuz(d) {
   const { p, v, yeni } = d;
   if (!SEKMELER().some(([k]) => k === odaSekme)) odaSekme = 'genel';
   const kasaGorunur = v.kartlar.includes('kasa');
+  const kSiparis = (s) => `<div class="a-kart ${s} a-gel"><h3>${L('Siparişler ve makbuzlar', 'Orders and receipts')}<span class="sag">${L('zincirden', 'from the chain')}</span></h3><div id="siparisListe"><div class="not">…</div></div></div>`;
   const kKasa = (s) => `<div class="a-kart ${s} a-gel"><h3>${L('Kasa · senin cüzdanın', 'Vault · your wallet')}<span class="sag">${L('para bizde durmaz', 'we never hold money')}</span></h3>
     <div class="a-kasa-ic">${jar(0)}<div><div class="a-bak" id="bak">– <span>NIM</span></div><div class="a-dok"><span>${L('Cüzdan', 'Wallet')} <b id="bakCuz">${d.bakiye == null ? '–' : sayiYaz(d.bakiye)}</b> <small id="bakCuzNot">${L('gönderilebilir', 'spendable')}</small></span><span>${L('Nimiq Pay kasası', 'Nimiq Pay vault')} <b id="bakPay">0</b> <small id="bakPayNot"></small></span><span class="a-kav">${L('Kavanoz 500 NIM\'de dolar', 'The jar is full at 500 NIM')}</span></div></div></div>
     <div class="a-gorunur"><div><b>${L('Ziyaretçiler kasamı görsün', 'Visitors can see my vault')}: ${kasaGorunur ? L('açık', 'on') : L('kapalı', 'off')}</b><small>${kasaGorunur ? L('Vitrinde kavanoz ve bakiye görünüyor.', 'The jar and balance show on your page.') : L('Kasan yalnız sana görünür.', 'Only you can see your vault.')}</small></div><button class="a-btn ikinci" data-is="sekme" data-sekme="gorunum">${L('Görünüm’de değiştir', 'Change in My page')}</button></div>
@@ -414,7 +421,7 @@ function icYuz(d) {
   const pano = {
     genel: (yeni ? `<div class="a-kart s12 a-gel"><h3>${L('İlk adımlar', 'First steps')}</h3><div class="ilk"><div class="tamam"><i>1</i>${L('İsim senin: ', 'The name is yours: ')}${esc(p.isim)}.nim</div><div><i>2</i>${L('Siteni yayınla: peteğe bal dolsun', 'Publish your site: fill the cell with honey')}</div><div><i>3</i>${L('Alt isim aç: arılar gelsin', 'Open sub-names: let the bees come')}</div></div></div>` : '')
       + kKasa('s5') + kGorunum('s7') + kSite('s12') + (site?.dis ? '' : kAlan('s12')),
-    gorunum: kGorunum('s12'), kasa: kKasa('s12'), site: kSite('s12') + (site?.dis ? '' : kAlan('s12')), ayar: kAyar('s12'),
+    gorunum: kGorunum('s12'), kasa: kKasa('s12') + kSiparis('s12'), site: kSite('s12') + (site?.dis ? '' : kAlan('s12')), ayar: kAyar('s12'),
     db: `<div class="a-kart s12 konsolK a-gel" id="konsol"></div>`, ari: kAri('s12'), odeme: kOdeme('s12'),
   }[odaSekme];
   return ustSerit(true) + `<section class="a-ic">
@@ -432,12 +439,14 @@ function gorunumHtml(v, d) {
     <div class="gd-govde"><div class="gd-sol">
       <div class="gd-liste">${tum.map((k) => `<div class="gd-sat" data-k="${k}"><span class="gd-ok"><button data-y="-1" aria-label="${L('yukarı', 'up')}">&#9650;</button><button data-y="1" aria-label="${L('aşağı', 'down')}">&#9660;</button></span><div><b>${KART_ADI()[k]}</b><small>${ACIKLAMA()[k]}${k === 'site' && !secili?.p.site ? ' · ' + L('henüz site yok', 'no site yet') : ''}${k === 'urun' && !d.urunler?.length ? ' · ' + L('Ayarlar\'da "urunler" ekleyince görünür', 'shows once you add "urunler" in Settings') : ''}</small></div><button class="gd-sw ${v.kartlar.includes(k) ? 'acik' : ''}" aria-label="${KART_ADI()[k]}"></button></div>`).join('')}</div>
       <div class="gd-sat gd-isim"><div><b>${L('Arı isimleri', 'Bee names')}</b><small>${L('Ziyaretçi arı sayısına dokununca kullanıcılarının isimleri açılsın. Kapalıyken yalnız sayılar görünür.', 'Visitors tap the bee count to see your users\' names. When off, only the counts show.')}</small></div><button class="gd-sw ${v.isimler ? 'acik' : ''}" data-isimler aria-label="${L('Arı isimleri', 'Bee names')}"></button></div>
+      <label class="gd-et">${L('Görünen ad', 'Display name')} <small>${L('isteğe bağlı', 'optional')}</small></label><input class="gd-ad giris-kutu" maxlength="40" autocomplete="off" placeholder="${L('Örnek: Mahalle Kahvecisi', 'For example: Corner Café')}" value="${esc(v.ad)}" />
       <label class="gd-et">${L('Kısa tanıtım', 'Short intro')} <small class="gd-say"></small></label><textarea class="gd-yazi" maxlength="160" rows="2" placeholder="${L('Peteğini bir cümleyle anlat', 'Describe your cell in one sentence')}">${esc(v.tanitim)}</textarea>
       <div class="gd-et">${L('Vurgu rengi', 'Accent colour')}</div><div class="gd-renk">${Object.entries(VURGU).map(([k, [c]]) => `<button data-v="${k}" style="--c:${c}" class="${k === v.vurgu ? 'sec' : ''}" aria-label="${k}"></button>`).join('')}</div>
       <div class="gd-et">${L('Site önizlemesi', 'Site preview')}</div>
       <div class="gd-kapak"><div class="gd-secim"><button data-kapak="canli" class="${v.kapak === 'canli' ? 'sec' : ''}">${L('Sitenin kendisi', 'The site itself')}</button><button data-kapak="gorsel" class="${v.kapak === 'gorsel' ? 'sec' : ''}">${L('Kendi görselim', 'My own picture')}</button></div>
         <label class="gd-yukle">${gorsel(d.p, 'kapak') ? `<img src="${esc(gorsel(d.p, 'kapak'))}" alt="" /><button class="gd-sil" data-sil-gorsel="kapak" aria-label="${L('Kapağı sil', 'Delete cover')}">×</button>` : `<i></i>`}<span>${L('Kapak görseli seç', 'Choose cover picture')}</span><input type="file" accept="image/png,image/jpeg,image/webp" data-gorsel="kapak" hidden /></label></div>
       ${d.urunler?.length ? `<div class="gd-et">${L('Ürün fotoğrafları', 'Product photos')}</div><div class="gd-urunler">${d.urunler.map((u) => `<label class="gd-yukle kucuk">${gorsel(d.p, 'urun-' + u.id) ? `<img src="${esc(gorsel(d.p, 'urun-' + u.id))}" alt="" /><button class="gd-sil" data-sil-gorsel="urun-${esc(u.id)}" aria-label="${L('Fotoğrafı sil', 'Delete photo')}">×</button>` : `<i></i>`}<span>${esc(u.ad)}</span><input type="file" accept="image/png,image/jpeg,image/webp" data-gorsel="urun-${esc(u.id)}" hidden /></label>`).join('')}</div>` : ''}
+      ${menuHtml(d)}
       <small class="gd-not">${L('Görseller hemen yüklenir; kapak seçimi "İmzala ve kaydet" ile kaydolur. PNG, JPG ya da WEBP.', 'Pictures upload right away; the cover choice is saved with "Sign and save". PNG, JPG or WEBP.')}</small></div>
     <div class="gd-sag"><div class="gd-et">${L('Ziyaretçi böyle görür', 'Visitors see this')}</div><div class="gd-onizle"></div>
       <div class="gd-dug"><button class="gd-bak" data-is="ziyaretciGozu">${L('Ziyaretçi gözüyle bak', 'View as visitor')}</button><button class="gd-kaydet" data-is="vitrinKaydet">${L('İmzala ve kaydet', 'Sign and save')}</button></div></div></div></div>`;
@@ -583,6 +592,8 @@ const ALAN_DURUM_YAZI = () => ({ sirada: L('sırada', 'queued'), bekliyor: L('DN
 let odemeAktif = null, odemeZaman = null;
 const ODEME_DURUM = () => ({ bekliyor: L('bekliyor', 'waiting'), odendi: L('ödendi', 'paid'), suresi_doldu: L('süresi doldu', 'expired'), iptal: L('iptal', 'cancelled') });
 const nimYaz = (x) => Number(x).toFixed(5).replace(/\.?0+$/, '');
+// receipt link: the payment's transaction on the nimiq.watch block explorer
+const islemLink = (h) => /^[0-9a-f]{64}$/i.test(String(h || '')) ? `<a class="islemL" href="https://nimiq.watch/#${String(h).toLowerCase()}" target="_blank" rel="noopener" data-hl-misafir="1" title="${L('Zincirde gör', 'See it on chain')}">${String(h).slice(0, 4)} ${String(h).slice(4, 8)} … ${String(h).slice(-4)} ↗</a>` : '';
 function odemeBip() { try { const a = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.14].forEach((g, i) => { const o = a.createOscillator(), v = a.createGain(); o.frequency.value = i ? 1320 : 880; v.gain.setValueAtTime(0.2, a.currentTime + g); v.gain.exponentialRampToValueAtTime(0.001, a.currentTime + g + 0.25); o.connect(v).connect(a.destination); o.start(a.currentTime + g); o.stop(a.currentTime + g + 0.3); }); } catch {} navigator.vibrate?.([80, 60, 80]); }
 function odemeBagla(p) {
   const tutar = $('odemeTutar'); if (tutar) tutar.onkeydown = (e) => { if (e.key === 'Enter') islem('odemeOlustur'); };
@@ -593,7 +604,7 @@ async function odemeListeYaz(p) {
   const el = $('odemeListe'); if (!el) return;
   const r = await api('/api/kasa/' + p.isim).catch(() => null); if (!r?.ok || !el.isConnected) return;
   const { satislar } = await r.json(), D = ODEME_DURUM();
-  el.innerHTML = satislar.length ? satislar.map((s) => `<div class="odemeS ${esc(s.durum)}"><b>${nimYaz(s.istenen)} NIM</b><span>${esc(s.not || '')}</span><small>${new Date(s.zaman).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small><span class="rozet">${esc(D[s.durum] || s.durum)}</span></div>`).join('')
+  el.innerHTML = satislar.length ? satislar.map((s) => `<div class="odemeS ${esc(s.durum)}"><b>${nimYaz(s.istenen)} NIM</b><span>${esc(s.not || '')}</span><small>${new Date(s.zaman).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small><span class="rozet">${esc(D[s.durum] || s.durum)}</span>${s.odeme?.hash ? `<span class="odemeMakbuz">${islemLink(s.odeme.hash)}</span>` : ''}</div>`).join('')
     : `<div class="not">${L('Henüz satış yok.', 'No sales yet.')}</div>`;
 }
 function odemeCiz(p, s) {
@@ -601,7 +612,7 @@ function odemeCiz(p, s) {
   $('odemeGir').hidden = true; el.hidden = false;
   if (s.durum === 'odendi') {
     el.innerHTML = `<div class="odemeTamam"><div class="tik">&#10003;</div><b>${L('ÖDENDİ', 'PAID')}</b><span>${nimYaz(s.odeme?.tutar ?? s.tutar)} NIM${s.not ? ' · ' + esc(s.not) : ''}</span>
-      <small>${s.odeme?.fromName ? esc(s.odeme.fromName) + '.nim' : esc(String(s.odeme?.from || '').slice(0, 9) + '…')}</small><button class="a-btn ana" data-is="odemeYeni">${L('Yeni satış', 'New sale')}</button></div>`;
+      <small>${s.odeme?.fromName ? esc(s.odeme.fromName) + '.nim' : esc(String(s.odeme?.from || '').slice(0, 9) + '…')}</small>${islemLink(s.odeme?.hash)}<button class="a-btn ana" data-is="odemeYeni">${L('Yeni satış', 'New sale')}</button></div>`;
   } else if (s.durum !== 'bekliyor') {
     el.innerHTML = `<div class="odemeBitti"><b>${esc(ODEME_DURUM()[s.durum] || s.durum)}</b><button class="a-btn ana" data-is="odemeYeni">${L('Yeni satış', 'New sale')}</button></div>`;
   } else {
@@ -625,6 +636,19 @@ function odemeCiz(p, s) {
     const n = await r.json();
     if (n.durum !== s.durum) { odemeAktif = { isim: p.isim, s: n }; if (n.durum === 'odendi') odemeBip(); odemeCiz(p, n); odemeListeYaz(p); }
   }, 1000);
+}
+
+const SIPARIS_DURUM = () => ({ bekliyor: L('bekliyor', 'waiting'), odendi: L('ödendi', 'paid'), odendi_stok_yok: L('ödendi, stok bitti', 'paid, out of stock'), kismi_odendi: L('kısmen ödendi', 'part paid'), suresi_doldu: L('süresi doldu', 'expired') });
+async function siparisleriYaz(p) {
+  const el = $('siparisListe'); if (!el) return;
+  const r = await api('/api/siparis/' + p.isim).catch(() => null);
+  if (!el.isConnected) return;
+  if (!r?.ok) { el.innerHTML = `<div class="not">${L('Siparişler okunamadı.', 'Could not read the orders.')}</div>`; return; }
+  const { siparisler = [] } = await r.json().catch(() => ({})), D = SIPARIS_DURUM();
+  const odenen = siparisler.filter((s) => s.durum !== 'suresi_doldu' || s.odeme);
+  el.innerHTML = odenen.length ? odenen.slice(0, 50).map((s) => { const linkler = (s.odeme?.odemeler || []).map((x) => islemLink(x.hash)).join('');
+    return `<div class="odemeS ${s.durum.startsWith('odendi') ? 'odendi' : esc(s.durum)}"><b>${nimYaz(s.fiyat)} NIM</b><span>${esc(s.ad || s.urun)}${s.alici ? ' · ' + esc(String(s.alici).slice(0, 4) + ' … ' + String(s.alici).slice(-4)) : ''}</span><small>${new Date(s.zaman).toLocaleDateString(dil === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' })}</small><span class="rozet">${esc(D[s.durum] || s.durum)}</span>${linkler ? `<span class="odemeMakbuz">${linkler}</span>` : ''}</div>`; }).join('')
+    : `<div class="not">${L('Henüz sipariş yok. Ürünlerini Görünüm sekmesinde yazarsın; oyuncu ya da müşteri sitende "satın al" deyince burada görünür.', 'No orders yet. Write your products in My page; when a player or customer buys on your site, it shows here.')}</div>`;
 }
 
 async function alanlariYaz(p) {
@@ -655,12 +679,12 @@ function gorunumBagla(d) {
   const el = $('gd'); let vrg = d.v.vurgu, kapak = d.v.kapak;
   const oku = () => [...el.querySelectorAll('.gd-liste .gd-sat')].filter((r) => r.querySelector('.gd-sw').classList.contains('acik')).map((r) => r.dataset.k);
   const ciz = () => {
-    const ks = oku(), yazi = el.querySelector('.gd-yazi').value;
+    const ks = oku(), yazi = el.querySelector('.gd-yazi').value, ad = el.querySelector('.gd-ad').value.trim().slice(0, 40);
     el.querySelector('.gd-say').textContent = yazi.length + '/160';
     const on = el.querySelector('.gd-onizle'); on.style.setProperty('--c', VURGU[vrg][0]);
-    on.innerHTML = `<i class="o-kim"><i></i><b>${esc(d.p.isim)}<em>.nim</em></b></i>${yazi ? `<i class="o-yazi">${esc(yazi)}</i>` : ''}${ks.map((k, j) => `<i class="o-${k} ${j === 0 ? 'ilk' : ''}">${KART_ADI()[k]}</i>`).join('')}`;
+    on.innerHTML = `${ad ? `<i class="o-profil">${esc(ad)}</i>` : ''}<i class="o-kim"><i></i><b>${esc(d.p.isim)}<em>.nim</em></b></i>${yazi ? `<i class="o-yazi">${esc(yazi)}</i>` : ''}${ks.map((k, j) => `<i class="o-${k} ${j === 0 ? 'ilk' : ''}">${KART_ADI()[k]}</i>`).join('')}`;
     if (kapak === 'gorsel' && gorsel(d.p, 'kapak')) { const s = on.querySelector('.o-site'); if (s) { s.style.backgroundImage = `url("${gorsel(d.p, 'kapak')}")`; s.classList.add('gorselli'); } }
-    gorunumBagla.secim = { kartlar: ks, vurgu: vrg, tanitim: yazi.trim().slice(0, 160), kapak, isimler: el.querySelector('[data-isimler]').classList.contains('acik') };
+    gorunumBagla.secim = { kartlar: ks, vurgu: vrg, tanitim: yazi.trim().slice(0, 160), ad, kapak, isimler: el.querySelector('[data-isimler]').classList.contains('acik') };
   };
   el.querySelectorAll('.gd-sw').forEach((b) => (b.onclick = () => { b.classList.toggle('acik'); ciz(); }));
   el.querySelectorAll('[data-kapak]').forEach((b) => (b.onclick = () => { if (b.dataset.kapak === 'gorsel' && !gorsel(d.p, 'kapak')) return el.querySelector('[data-gorsel="kapak"]').click(); kapak = b.dataset.kapak; el.querySelectorAll('[data-kapak]').forEach((x) => x.classList.toggle('sec', x === b)); ciz(); }));
@@ -697,8 +721,71 @@ function gorunumBagla(d) {
     ciz();
   }));
   el.querySelectorAll('.gd-renk button').forEach((b) => (b.onclick = () => { vrg = b.dataset.v; el.querySelectorAll('.gd-renk button').forEach((x) => x.classList.toggle('sec', x === b)); ciz(); }));
-  el.querySelector('.gd-yazi').oninput = ciz;
+  el.querySelector('.gd-yazi').oninput = ciz; el.querySelector('.gd-ad').oninput = ciz;
   ciz();
+  menuBagla(d);
+}
+
+// ---- MENU / PRODUCTS: the owner lists what they sell (name, price in NIM, stock). Saved as the signed setting "urunler",
+// which Hive's sales and the SDK already read. The template fills only names: the owner writes the prices.
+const MENU_SABLON = () => [L('Çay', 'Tea'), L('Türk kahvesi', 'Turkish coffee'), L('Filtre kahve', 'Filter coffee'), L('Su', 'Water'), L('Simit', 'Bagel'), L('Tost', 'Toasted sandwich'), L('Kurabiye', 'Cookie')];
+const urunKimlik = (ad, kullanilan) => {
+  const kok = String(ad).toLocaleLowerCase('tr').replace(/[çğıöşü]/g, (c) => ({ ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' }[c])).normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 28) || 'urun';
+  let id = kok, n = 2; while (kullanilan.has(id)) id = kok + '-' + n++; kullanilan.add(id); return id;
+};
+const menuSatir = (u = {}) => `<div class="mn-s" data-id="${esc(u.id || '')}"><input class="mn-ad giris-kutu" maxlength="60" placeholder="${L('Ürün adı', 'Item name')}" value="${esc(u.ad || '')}" /><input class="mn-fiyat giris-kutu" inputmode="decimal" placeholder="NIM" value="${u.fiyat ? esc(String(u.fiyat)) : ''}" /><input class="mn-stok giris-kutu" inputmode="numeric" placeholder="${L('stok', 'stock')}" value="${u.stok != null ? esc(String(u.stok)) : ''}" /><button type="button" class="mn-sil" aria-label="${L('Satırı sil', 'Remove row')}">×</button></div>`;
+// the editor reads the signed setting itself (not the sales list), so a failed fetch can never save an empty menu over a real one
+function menuUrunleri(d) {
+  let l = d.ayar?.ayar?.urunler; try { if (typeof l === 'string') l = JSON.parse(l); } catch { l = []; }
+  return (Array.isArray(l) ? l : []).filter((u) => u && typeof u === 'object').map((u) => ({ id: String(u.id || ''), ad: String(u.ad || u.id || ''), fiyat: Number(u.fiyat) || '', stok: u.stok == null || u.stok === '' ? null : u.stok }));
+}
+function menuHtml(d) {
+  return `<div class="gd-et">${L('Ürünler ve menü', 'Products and menu')} <small>${L('fiyat NIM, stok boş = sınırsız', 'price in NIM, empty stock = no limit')}</small></div>
+    <div class="mn" id="mn"><div class="mn-liste">${menuUrunleri(d).map(menuSatir).join('')}</div>
+      <div class="mn-dug"><button type="button" class="gd-bak" data-mn="ekle">+ ${L('Ürün ekle', 'Add item')}</button><button type="button" class="gd-bak" data-mn="sablon">${L('Kafe / büfe şablonu', 'Café / stall template')}</button></div>
+      <div class="gd-sat gd-isim"><div><b>${L('Menü gibi göster', 'Show as a menu')}</b><small>${L('Ziyaretçi ürünleri kart yerine tek satırlık liste olarak görür: ad ve fiyat.', 'Visitors see a one-line list instead of cards: name and price.')}</small></div><button type="button" class="gd-sw mn-gorunum ${d.v.menu ? 'acik' : ''}" aria-label="${L('Menü gibi göster', 'Show as a menu')}"><i></i></button></div>
+      <button type="button" class="gd-kaydet" data-mn="kaydet">${L('Menüyü imzala ve kaydet', 'Sign and save the menu')}</button>
+      <small class="gd-not">${L('Ödeme doğrudan senin cüzdanına gelir; Hive yalnız siparişi zincirde görüp "ödendi" yazar.', 'Payments go straight to your wallet; Hive only sees the order on chain and marks it paid.')}</small></div>`;
+}
+function menuBagla(d) {
+  const el = $('mn'); if (!el) return;
+  const liste = el.querySelector('.mn-liste');
+  const silBagla = () => liste.querySelectorAll('.mn-sil').forEach((b) => (b.onclick = () => b.closest('.mn-s').remove()));
+  const ekle = (u) => { liste.insertAdjacentHTML('beforeend', menuSatir(u)); silBagla(); };
+  silBagla();
+  el.querySelector('.mn-gorunum').onclick = (e) => e.currentTarget.classList.toggle('acik');
+  el.querySelectorAll('[data-mn]').forEach((b) => (b.onclick = async () => {
+    const ne = b.dataset.mn;
+    if (ne === 'ekle') { ekle(); liste.lastElementChild.querySelector('.mn-ad').focus(); return; }
+    if (ne === 'sablon') {
+      const var_ = new Set([...liste.querySelectorAll('.mn-ad')].map((i) => i.value.trim().toLocaleLowerCase('tr')));
+      MENU_SABLON().filter((ad) => !var_.has(ad.toLocaleLowerCase('tr'))).forEach((ad) => ekle({ ad }));
+      return bildir(L('Şablon eklendi. Fiyatları sen yaz, istemediğin satırı sil.', 'Template added. Write your prices and remove what you do not sell.'));
+    }
+    // save: every row needs a name and a price above 0; ids stay the same for items that already exist (open orders keep them)
+    const kullanilan = new Set(), urunler = [];
+    for (const r of liste.querySelectorAll('.mn-s')) {
+      const ad = r.querySelector('.mn-ad').value.trim(), fs = r.querySelector('.mn-fiyat').value.trim(), ss = r.querySelector('.mn-stok').value.trim();
+      if (!ad && !fs) continue;
+      const fiyat = Number(fs.replace(/\s/g, '').replace(',', '.'));
+      if (!ad || !(fiyat > 0) || fiyat > 1e6) { r.querySelector(ad ? '.mn-fiyat' : '.mn-ad').focus(); return bildir(ad ? L(ad + ': fiyatı yaz (NIM)', ad + ': write the price (NIM)') : L('Satırın adı yok', 'A row has no name')); }
+      const stok = ss === '' ? null : Math.max(0, Math.floor(Number(ss)));
+      if (ss !== '' && !Number.isFinite(stok)) { r.querySelector('.mn-stok').focus(); return bildir(L('Stok bir sayı olmalı', 'Stock must be a number')); }
+      let id = r.dataset.id; if (id && !kullanilan.has(id)) kullanilan.add(id); else id = '';
+      urunler.push({ id, ad: ad.slice(0, 60), fiyat, ...(stok == null ? {} : { stok }) });
+    }
+    urunler.forEach((u) => { if (!u.id) u.id = urunKimlik(u.ad, kullanilan); });
+    if (urunler.length > 60) return bildir(L('En çok 60 ürün', 'At most 60 items'));
+    b.disabled = true;
+    try {
+      const menu = el.querySelector('.mn-gorunum').classList.contains('acik');
+      const kartlar = d.v.kartlar.includes('urun') || !urunler.length ? null : ['urun', ...d.v.kartlar].join(',');
+      const sec = gorunumBagla.secim || {};   // the name and intro typed in the same tab are saved too, not lost
+      const j = await ayarBirlestir(d.p, { urunler: JSON.stringify(urunler), 'vitrin.urunler': menu ? 'menu' : 'kart', ...(kartlar ? { 'vitrin.kartlar': kartlar } : {}), 'profil.ad': sec.ad ?? d.v.ad ?? '', tanitim: sec.tanitim ?? d.v.tanitim ?? '' });
+      bildir(L('Menü kaydedildi, sürüm #', 'Menu saved, version #') + j.surum);
+      return odaCiz(false);
+    } catch (e) { bildir(e.message); } finally { b.disabled = false; }
+  }));
 }
 
 // writes by merging into signed settings (existing keys are kept)
@@ -910,7 +997,7 @@ async function islem(ne, el) {
       ? { kartlar: v.kartlar.includes('kasa') ? v.kartlar.filter((k) => k !== 'kasa') : [...v.kartlar, 'kasa'], vurgu: v.vurgu, tanitim: v.tanitim }
       : gorunumBagla.secim;
     try {
-      const j = await ayarBirlestir(p, { 'vitrin.kartlar': s.kartlar.join(',') || 'yok', 'vitrin.vurgu': s.vurgu, tanitim: s.tanitim, 'vitrin.kapak': s.kapak || v.kapak || 'canli',
+      const j = await ayarBirlestir(p, { 'vitrin.kartlar': s.kartlar.join(',') || 'yok', 'vitrin.vurgu': s.vurgu, tanitim: s.tanitim, 'profil.ad': s.ad ?? v.ad ?? '', 'vitrin.kapak': s.kapak || v.kapak || 'canli',
         'vitrin.arilar': (s.isimler ?? v.isimler) ? 'acik' : 'gizli' });
       bildir(ne === 'kasaGorunur' ? (s.kartlar.includes('kasa') ? L('Kasan artık vitrinde görünüyor', 'Your vault now shows on your page') : L('Kasan artık yalnız sana görünür', 'Your vault is now visible only to you')) : L('Görünümün kaydedildi, sürüm #', 'Your page is saved, version #') + j.surum);
     } catch (e) { bildir(e.message); }
@@ -1099,6 +1186,29 @@ async function islem(ne, el) {
   await yukle();
 }
 
+// ---- usage chart: new .nim names per week (registration time, real names only) and Pigeon's public payment totals
+async function grafikAc() {
+  const k = $('grafik'); if (!k) return;
+  if (!k.hidden) { k.hidden = true; return; }
+  k.hidden = false;
+  const gercek = (petekler || []).filter((p) => !p.ornek && p.zaman), HAFTA = 7 * 864e5, simdi = Date.now();
+  const ilk = gercek.length ? Math.min(...gercek.map((p) => p.zaman)) : simdi, say = Math.min(12, Math.max(4, Math.ceil((simdi - ilk) / HAFTA)));
+  const kova = Array.from({ length: say }, (_, i) => ({ bas: simdi - (say - i) * HAFTA, n: 0 }));
+  for (const p of gercek) { const i = say - 1 - Math.floor((simdi - p.zaman) / HAFTA); if (i >= 0) kova[i].n++; }
+  const enCok = Math.max(1, ...kova.map((x) => x.n)), G = 300, Y = 110, gen = G / say;
+  const gun = (t) => new Date(t).toLocaleDateString(dil === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' });
+  const cubuk = kova.map((x, i) => { const h = Math.round((x.n / enCok) * (Y - 24)); return `<g><rect x="${i * gen + 3}" y="${Y - 14 - h}" width="${gen - 6}" height="${Math.max(h, 1)}" rx="3"><title>${gun(x.bas)}: ${x.n}</title></rect>${x.n ? `<text x="${i * gen + gen / 2}" y="${Y - 18 - h}">${x.n}</text>` : ''}</g>`; }).join('');
+  k.innerHTML = `<div class="gr-bas"><b>${L('Kullanım', 'Usage')}</b><button type="button" class="gr-kapat" aria-label="${L('Kapat', 'Close')}">×</button></div>
+    <div class="gr-et">${L('Haftalık yeni isim', 'New names per week')}</div>
+    <svg class="gr-svg" viewBox="0 0 ${G} ${Y}" role="img" aria-label="${L('Haftalık yeni isim', 'New names per week')}">${cubuk}<text class="gr-alt" x="0" y="${Y - 2}">${gun(kova[0].bas)}</text><text class="gr-alt" x="${G}" y="${Y - 2}" text-anchor="end">${L('bu hafta', 'this week')}</text></svg>
+    <div class="gr-say" id="grSay">…</div>
+    <small class="gr-not">${L('İsimler zincirdeki kayıt zamanına göre. Ödeme sayıları Pigeon’un herkese açık sayacından (toplam).', 'Names by their registration time on chain. Payment numbers come from Pigeon’s public counter (totals).')}</small>`;
+  k.querySelector('.gr-kapat').onclick = () => (k.hidden = true);
+  const s = await fetch('https://signal.heylogram.tv/pigeonapi/api/stats').then((r) => r.json()).catch(() => null);
+  const el = $('grSay'); if (!el) return;
+  el.innerHTML = s ? [[gercek.length, L('isim', 'names')], [s.paidRequests || 0, L('ödenen istek', 'paid requests')], [s.payers || 0, L('farklı ödeyen', 'distinct payers')], [sayiYaz(s.paidNim || 0), 'NIM']].map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join('') : `<div><b>${gercek.length}</b><span>${L('isim', 'names')}</span></div>`;
+}
+
 // ---- search
 $('araForm').onsubmit = async (e) => {
   e.preventDefault(); const n = $('ara').value.trim().toLowerCase().replace(/\.nim$/, ''); if (!n) return;
@@ -1109,6 +1219,7 @@ $('araForm').onsubmit = async (e) => {
 };
 $('ornekli').onchange = (e) => { ornekli = e.target.checked; kapat(); yukle.ilk = false; yukle(); };
 
+$('sayacDug')?.addEventListener('click', grafikAc);
 // ---- which cell to open at start: #n=<name> in the link ("See in hive" from Pigeon), else the wallet's own cell
 function hashIsim() { const m = location.hash.match(/^#(n|yeni)=([a-z0-9-]{1,32})$/); if (m) try { history.replaceState(null, '', location.pathname + location.search); } catch {} return m ? { isim: m[2], yeni: m[1] === 'yeni' } : null; }
 async function benimPetegim() {

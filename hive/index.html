@@ -444,6 +444,32 @@
   #perde.gir { animation: perdeGir .75s ease-in forwards; } #perde.cik { animation: perdeCik .9s ease-out forwards; }
   @keyframes perdeGir { from { opacity: 0; transform: translateY(-30%); } to { opacity: 1; transform: none; } }
   @keyframes perdeCik { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(30%); } }
+
+  /* usage chart under the counters (Nov 2026) */
+  button.sayac { border: 0; background: none; padding: 4px 8px; border-radius: 12px; cursor: pointer; font: inherit; color: var(--muted); text-align: inherit; }
+  button.sayac:hover { background: var(--line); }
+  .grafik { position: fixed; top: 74px; right: 16px; z-index: 30; width: min(360px, calc(100vw - 32px)); padding: 14px 16px; border-radius: 18px; background: var(--kart, #fff); color: var(--ink); box-shadow: 0 18px 50px rgba(0,0,0,.18); }
+  .grafik .gr-bas { display: flex; align-items: center; justify-content: space-between; font-size: 15px; }
+  .grafik .gr-kapat { border: 0; background: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--muted); }
+  .grafik .gr-et { margin: 8px 0 4px; font: 700 11px system-ui; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .grafik .gr-svg { width: 100%; height: auto; display: block; }
+  .grafik .gr-svg rect { fill: #D97706; } .grafik .gr-svg text { font: 700 10px system-ui; fill: var(--ink); text-anchor: middle; } .grafik .gr-svg text.gr-alt { font-weight: 500; fill: var(--muted); text-anchor: start; }
+  .grafik .gr-svg text.gr-alt[text-anchor="end"] { text-anchor: end; }
+  .grafik .gr-say { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0 6px; text-align: center; } .grafik .gr-say b { display: block; font-size: 18px; } .grafik .gr-say span { font-size: 11px; color: var(--muted); }
+  .grafik .gr-not { display: block; font-size: 11px; color: var(--muted); }
+  /* profile, menu, receipts (Nov 2026) */
+  #oda .a-profil { font: 700 clamp(16px, 1.4vw, 20px) system-ui; color: var(--vurgu); margin-bottom: 2px; overflow-wrap: anywhere; }
+  #oda .o-profil { display: block; font-weight: 700; color: var(--c); }
+  #oda .gd-ad { width: 100%; box-sizing: border-box; }
+  #oda .a-menu { width: 100%; display: flex; flex-direction: column; gap: 2px; } #oda .a-menu-s { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; font-size: 16px; }
+  #oda .a-menu-s i { flex: 1; border-bottom: 2px dotted var(--line); transform: translateY(-4px); } #oda .a-menu-s span { font-weight: 800; color: var(--vurgu); white-space: nowrap; } #oda .a-menu-s.bitti { opacity: .45; }
+  #oda .mn-liste { display: flex; flex-direction: column; gap: 6px; } #oda .mn-s { display: grid; grid-template-columns: 1fr 84px 64px 32px; gap: 6px; align-items: center; }
+  #oda .mn-s .giris-kutu { width: 100%; box-sizing: border-box; min-width: 0; } #oda .mn-sil { border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+  #oda .mn-dug { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; } #oda .mn-dug button, #oda .mn > .gd-kaydet { padding: 10px 16px; border-radius: 999px; font: 700 13px system-ui; cursor: pointer; } #oda .mn > .gd-kaydet { margin-top: 10px; width: 100%; }
+  #oda .mn-s .giris-kutu, #oda .gd-ad { margin-top: 0; font: 14px system-ui; }
+  #oda .islemL { display: inline-block; font: 600 12px ui-monospace, monospace; color: inherit; opacity: .85; text-decoration: none; } #oda .islemL:hover { text-decoration: underline; }
+  #oda .odemeTamam .islemL { color: #fff; opacity: 1; }
+  #oda .odemeMakbuz { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; margin-top: -4px; }
 </style>
 </head>
 <body>
@@ -454,7 +480,8 @@
   <form class="ara" id="araForm"><input id="ara" placeholder="Bir isim ara: garura, mert…" autocomplete="off" spellcheck="false" /><button id="araBul">Bul</button></form>
   <button class="tema dilDug" id="dilDug" type="button" aria-label="Language">EN</button>
   <button class="tema" id="temaDug" type="button" aria-label="Gece / gündüz"></button>
-  <div class="sayac"><div><b id="sIsim">0</b><span data-tr="isim" data-en="names">isim</span></div><div><b id="sDolu">0</b><span data-tr="bal dolu" data-en="with honey">bal dolu</span></div><div><b id="sAri">0</b><span data-tr="arı" data-en="bees">arı</span></div></div>
+  <button class="sayac" id="sayacDug" type="button" aria-controls="grafik" data-tr-aria="Kullanım grafiği" title="Usage"><div><b id="sIsim">0</b><span data-tr="isim" data-en="names">isim</span></div><div><b id="sDolu">0</b><span data-tr="bal dolu" data-en="with honey">bal dolu</span></div><div><b id="sAri">0</b><span data-tr="arı" data-en="bees">arı</span></div></button>
+  <div class="grafik" id="grafik" hidden></div>
 </div>
 <div id="perde"></div>
 <div class="anahtar">
