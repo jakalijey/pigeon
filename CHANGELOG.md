@@ -4,6 +4,12 @@ What changed in Pigeon, newest first. The app at <https://pigeon.heylogram.com> 
 
 Versions: the app and its server are numbered here (0.x while the name rules can still grow). The SDK has its own number on npm as [`pigeon-nim`](https://www.npmjs.com/package/pigeon-nim); a release that changes it says so.
 
+## 0.10.0 (19 November 2026): Spanish and receipts
+
+- **Spanish.** Pigeon speaks English, Spanish and Turkish. It follows the language of Nimiq Pay or the browser; the EN · ES · TR button switches it, and the choice is kept.
+- **Receipts.** The receipt after a payment links the transaction to the nimiq.watch block explorer, and Share sends that link. The link of a paid request now shows a receipt too: who paid, how much, when, and the transaction on chain.
+- **Start screen.** A console warning from the opening animation (a radius a hair below zero) is gone.
+
 ## 0.9.0 (19 November 2026): Security policy, contributing guide, more tests
 
 - **Security.** [SECURITY.md](SECURITY.md): how to report a problem privately (pigeon@heylogram.com), what is in scope, and the known limits.

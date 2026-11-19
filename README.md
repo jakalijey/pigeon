@@ -158,10 +158,11 @@ The same [SDK](sdk/README.md) drives it (`hive-db.js`, `nim.js`). Coding agents 
 Pigeon keeps growing after the competition. The first three updates have dates; the larger pieces open as more people use names, so each one arrives when it is needed.
 
 **November 2026: Faces, languages and receipts**
-- Spanish, next to English and Turkish.
+- Done: Spanish, next to English and Turkish (the EN · ES · TR button, or the language of Nimiq Pay).
+- Done: receipts for payments in Pigeon. After you pay, and on the link of every paid request, each payment shows who paid, how much and when, linked to its transaction on chain (a receipt, not an invoice).
 - Profiles: a display name and a short line on every name.
 - A menu template for cafes and stalls in Hive.
-- Receipts: a page for every paid request, order or till sale, linked to its transaction on chain (a receipt, not an invoice).
+- Receipts for Hive orders and till sales, the same way.
 - A usage chart in the hive window: names, payments and distinct payers per week, gift names shown apart.
 
 **December 2026: Names that move**

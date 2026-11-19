@@ -348,3 +348,7 @@ html.typing #app{padding-bottom:96px}
 .pickrow small { opacity: .6; }
 .pickrow .ok { align-self: center; flex: none; }
 .pickrow .btn { flex: none; width: auto; height: auto; min-height: 44px; padding: 8px 14px; font-size: 14px; }
+
+/* receipt: payments of a request, each linked to its transaction on chain */
+.receiptslip{margin-top:12px}.receiptslip .rt{font:800 12px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.receiptslip dd small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.txl{display:inline-block;margin-top:2px;color:var(--orangeD);text-decoration:none;font-size:12px}.txl:hover{text-decoration:underline}

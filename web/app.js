@@ -6,10 +6,12 @@ import qrcode from 'qrcode-generator';
 import { ring } from './ring.js?v=1';
 
 const host = window.nimiqPay?.language || navigator.language || 'en';
-const pickLang = (l) => (String(l || '').toLowerCase().startsWith('tr') ? 'tr' : 'en');
-// a language the user picked with the TR/EN button wins over the browser and over Nimiq Pay
+const pickLang = (l) => { const x = String(l || '').toLowerCase(); return x.startsWith('tr') ? 'tr' : x.startsWith('es') ? 'es' : 'en'; };
+const LOCALE = { tr: 'tr-TR', en: 'en-US', es: 'es-ES' };
+const LANGS = ['en', 'es', 'tr'];
+// a language the user picked with the language button wins over the browser and over Nimiq Pay
 // (Electron browsers report the Windows language, not the browser setting)
-const savedLang = (() => { try { const s = localStorage.getItem('pg_dil'); return s === 'tr' || s === 'en' ? s : null; } catch { return null; } })();
+const savedLang = (() => { try { const s = localStorage.getItem('pg_dil'); return LANGS.includes(s) ? s : null; } catch { return null; } })();
 let lang = savedLang || pickLang(host);
 document.documentElement.lang = lang;
 
@@ -43,7 +45,38 @@ const TEXTS = {
     engrave: 'Engrave the ring', engraving: 'Engraving on chain…', yours: 'The ring is yours', closed: 'Ring registry opens soon', mine: 'Your rings',
     evSent: 'Sent', evSentSub: (n) => `on its way to ${n}`, evGot: 'Received', evGotSub: (n) => `from ${n}`, evPaid: 'Paid', evPaidSub: (n) => `${n} paid your request`,
     evSplit: (k, n) => `${k} of ${n} paid`, evSplitWait: (n) => `${n}’s stamp is waiting`, evSplitAll: 'Every stamp is in', evRingSub: (n) => `you are ${n} now`, paidWord: 'PAID',
-    rejected: 'Cancelled in the wallet', failed: 'Something went wrong', notFound: 'Not found', tooLong: 'Note too long',
+    receiptT: 'Receipt', onChain: 'See it on chain', rejected: 'Cancelled in the wallet', failed: 'Something went wrong', notFound: 'Not found', tooLong: 'Note too long',
+  },
+  es: {
+    app: 'Pigeon', tagline: 'La nueva forma de Nimiq', send: 'Enviar', request: 'Pedir', split: 'Dividir', ring: 'Tu anillo',
+    noRing: 'Aún sin anillo', letters: 'Cartas para ti', noLetters: 'No hay cartas esta semana.',
+    openInPay: 'Abre esta app en Nimiq Pay para enviar y recibir.', retry: 'Reintentar', flyHome: 'Pigeon vuela dentro de la billetera Nimiq Pay.', scanQr: 'Escanéalo con tu teléfono y Pigeon se abre en Nimiq Pay.', openPay: 'Abrir en Nimiq Pay', noPay: '¿Aún no tienes Nimiq Pay?', connecting: 'Conectando con la red Nimiq…', walletWait: 'Conectando con Nimiq Pay…',
+    write: 'Escribe una carta', to: 'PARA', toHint: 'nombre.nim o dirección NQ', ringOk: 'El anillo coincide', plain: 'Dirección sin anillo', noName: 'Nadie lleva este anillo', moved: 'Dirección de bóveda: se envía a la billetera de su dueño',
+    stampHint: 'La imagen del sello es única de esta dirección. Comprueba que coincide con la de la pantalla de tu amigo.',
+    recent: 'Recientes', alike: (n) => `Se parece a ${n}.nim: mira la imagen`,
+    notePh: 'Añade una nota', noteHint: 'La nota se escribe en la cadena. Cualquiera puede leerla.', seal: 'Sellar y volar', sending: 'Esperando a tu billetera…',
+    delivered: 'ENTREGADO · CORREO NIMIQ · ', note: 'Nota', fee: 'Comisión', tx: 'Transacción', share: 'Compartir', done: 'Listo',
+    tie: 'Átale una nota a la pata', amount: 'CANTIDAD', what: 'PARA QUÉ', create: 'Atar la nota',
+    reqHint: 'Quien reciba el enlace verá tu paloma en su ventana. Cuando pague, vuelve volando a ti.',
+    copy: 'Copiar', copied: 'Copiado', waiting: 'Esperando', paid: 'Pagado', partial: 'Pago parcial', atWindow: 'La paloma en la ventana', back: 'De vuelta contigo',
+    splitT: 'Dividir la carta', people: 'QUIÉN PAGA', addPerson: 'nombre.nim o un nombre', add: 'Añadir', includeMe: 'Yo también pago mi parte', splitIt: 'Separar en sellos',
+    stampsOf: (n, s, k) => `${n} sellos · ${s} NIM cada uno · ${k}/${n} matasellados`, nudge: 'Recordar', splitHint: 'Cada persona que paga recibe un matasellos en su sello. Cuando todos están matasellados, la carta está completa.',
+    paidMark: 'PAGADO · PAGADO · ', sentYou: 'te envió una carta', ringIs: (n) => `El anillo coincide con ${n}`, noRingWarn: 'Sin anillo. Confirma la dirección con esa persona.',
+    notNow: 'Ahora no', pay: 'Pagar', alreadyPaid: 'Esta carta ya está pagada.',
+    fakeT: (n) => `Esta paloma no es ${n}.nim`, fakeP: (n) => `La carta dice venir de <b>${n}</b>, pero su anillo pertenece a otra dirección.`,
+    should: 'Debería ser', arrived: 'Llegó', noMatch: 'el anillo no coincide', blocked: 'Pago bloqueado', fakeHint: 'Pregúntale por otra vía. La paloma fue devuelta.', goBack: 'Volver',
+    ringT: 'Ponle un anillo a tu paloma', free: 'Este anillo está libre', taken: (a) => `Lo tiene ${a}`, reserved: 'Reservado', invalid: 'Solo letras, números y guiones simples',
+    price: 'Grabado', forever: 'Duración', foreverV: 'Para siempre', how: 'Cómo', howV: 'Nota', rule: 'Regla', ruleV: 'Gana el primero en la cadena',
+    ringHint: 'Con un anillo tus amigos te encuentran por tu nombre, y tu paloma siempre llega a la ventana correcta.',
+    hiveT: (n) => `${n}.nim tiene una celda en Hive`, hiveS: 'Tu sitio, una tienda, una caja QR, propinas.', siteAddT: 'Tu celda en Hive está lista: pon tu sitio en ella', siteAddS: 'Sube tu sitio o enlaza el que ya tienes con una línea. Se abre con tu nombre.', sdkL: '¿Creas una app? El SDK está en GitHub', freeB: 'Gratis hasta el 11 nov', upFree: 'Sube tu sitio gratis hasta el 11 de noviembre.', up: 'Sube tu sitio: va en la ventana y se abre con tu nombre.', haveSite: '¿Ya tienes un sitio? Enlázalo con una línea', liveT: (n) => `${n}.nim está en línea`, liveS: (v, b) => `Hoy ${v} visitantes · ${b} abejas`, seeHive: 'Verlo en la colmena', openSite: 'Abrir el sitio', hiveTile: 'Hive', payL: 'Acepta pagos en NIM en tu sitio con una línea',
+    subOpenOn: 'Los jugadores pueden tomar su propio subanillo: SÍ', subOpenOff: 'Los jugadores pueden tomar su propio subanillo: NO', subOpenHint: 'Si está activado, tu app puede dejar que cada jugador tome nombre.tuyo.nim para su propia billetera. El primero que llega se lo queda. Puedes desactivarlo cuando quieras.', subOpenSent: 'Enviado; cambia en unos segundos',
+    pickQ: 'Qué nombre se muestra para ti', pickNow: 'Se muestra', pickSet: 'Mostrar este', pickSent: 'Enviado. Cambia cuando la transacción entre en un bloque', pickDone: (n) => `Ahora te muestras como ${n}`, pickHint: 'Este nombre se muestra para tu dirección en todas las apps. Tus otros nombres siguen funcionando y recibiendo pagos. Cuesta 1 luna.',
+    subQ: (p) => `Dar subanillos bajo ${p}.nim`, subPh: 'nombre', subTo: 'Dirección o nombre.nim (vacío = tú)', subGive: (n) => `Dar ${n}`, subLong: 'Demasiado largo: el nombre + tu nombre deben tener 22 letras o menos', subTaken: 'Ya está tomado', subBadTo: 'No se encontró la dirección o el nombre', subDone: (n) => `${n} está en camino`, subList: 'Subanillos dados', subNone: 'Ninguno todavía',
+    giftQ: '¿Tienes un código de regalo?', giftPh: 'CÓDIGO DE REGALO', giftOk: (n) => `El código funciona: gratis (quedan ${n})`, giftBad: 'Este código no es válido o se agotó', giftShort: 'Los códigos de regalo valen para nombres de 5 letras o más', giftFree: 'gratis',
+    engrave: 'Grabar el anillo', engraving: 'Grabando en la cadena…', yours: 'El anillo es tuyo', closed: 'El registro de anillos abre pronto', mine: 'Tus anillos',
+    evSent: 'Enviado', evSentSub: (n) => `en camino a ${n}`, evGot: 'Recibido', evGotSub: (n) => `de ${n}`, evPaid: 'Pagado', evPaidSub: (n) => `${n} pagó tu pedido`,
+    evSplit: (k, n) => `${k} de ${n} pagaron`, evSplitWait: (n) => `El sello de ${n} está esperando`, evSplitAll: 'Todos los sellos están', evRingSub: (n) => `ahora eres ${n}`, paidWord: 'PAGADO',
+    receiptT: 'Recibo', onChain: 'Verlo en la cadena', rejected: 'Cancelado en la billetera', failed: 'Algo salió mal', notFound: 'No encontrado', tooLong: 'Nota demasiado larga',
   },
   tr: {
     app: 'Güvercin', tagline: 'Nimiq’in yeni formu', send: 'Gönder', request: 'İste', split: 'Böl', ring: 'Halka al',
@@ -74,7 +107,7 @@ const TEXTS = {
     engrave: 'Halkayı taktır', engraving: 'Zincire kazınıyor…', yours: 'Halka artık senin', closed: 'Halka defteri yakında açılıyor', mine: 'Halkaların',
     evSent: 'Uçtu', evSentSub: (n) => `${n} yolda`, evGot: 'Geldi', evGotSub: (n) => `Gönderen: ${n}`, evPaid: 'Ödendi', evPaidSub: (n) => `${n} isteğini ödedi`,
     evSplit: (k, n) => `${k}/${n} ödedi`, evSplitWait: (n) => `Bekleyen pul: ${n}`, evSplitAll: 'Bütün pullar damgalandı', evRingSub: (n) => `Yeni adın: ${n}`, paidWord: 'ÖDENDİ',
-    rejected: 'Cüzdanda vazgeçildi', failed: 'Bir şey ters gitti', notFound: 'Bulunamadı', tooLong: 'Not çok uzun',
+    receiptT: 'Makbuz', onChain: 'Zincirde gör', rejected: 'Cüzdanda vazgeçildi', failed: 'Bir şey ters gitti', notFound: 'Bulunamadı', tooLong: 'Not çok uzun',
   },
 };
 let T = TEXTS[lang];
@@ -136,6 +169,13 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const compact = (a) => String(a || '').replace(/\s/g, '').toUpperCase();
 const pretty = (a) => compact(a).replace(/(.{4})/g, '$1 ').trim();
 const short = (a) => { const c = pretty(a); return c ? c.slice(0, 9) + ' … ' + c.slice(-4) : ''; };
+// receipts: every payment links to its transaction on chain (nimiq.watch block explorer)
+const isHash = (h) => /^[0-9a-f]{64}$/i.test(String(h || ''));
+const txUrl = (h) => 'https://nimiq.watch/#' + String(h).toLowerCase();
+const txLink = (h) => isHash(h) ? `<a class="txl mono" href="${txUrl(h)}" target="_blank" rel="noopener" title="${esc(T.onChain)}">${esc(h.slice(0, 4) + ' ' + h.slice(4, 8) + ' … ' + h.slice(-4))} ↗</a>` : '';
+function paidSlip(r) {
+  return `<div class="slip receiptslip"><div class="rt">${esc(T.receiptT)}</div><dl>${r.payments.map((p) => `<dt>${esc(p.fromName ? p.fromName + '.nim' : short(p.from))}</dt><dd>${nim(p.value)} NIM${p.time ? `<small>${esc(dateParts(p.time).join(' · '))}</small>` : ''}${txLink(p.hash)}</dd>`).join('')}</dl></div>`;
+}
 // Nimiq address: its own alphabet (no I, O, W, Z) + IBAN mod-97 checksum, so no payment or sub-ring goes to a mistyped address
 const isAddr = (a) => {
   const c = compact(a);
@@ -144,13 +184,13 @@ const isAddr = (a) => {
   for (const ch of c.slice(4) + c.slice(0, 4)) { const v = /[0-9]/.test(ch) ? ch : String(ch.charCodeAt(0) - 55); for (const d of v) r = (r * 10 + +d) % 97; }
   return r === 1;
 };
-const nim = (luna, digits = 5) => (Number(luna || 0) / 1e5).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: digits });
+const nim = (luna, digits = 5) => (Number(luna || 0) / 1e5).toLocaleString(LOCALE[lang], { maximumFractionDigits: digits });
 const toLuna = (v) => { const n = Number(String(v || '').replace(/\s/g, '').replace(',', '.')); return Number.isFinite(n) && n > 0 ? Math.round(n * 1e5) : 0; };
 const bytes = (s) => new TextEncoder().encode(s).length;
 const clip = (s, max = 64) => { let out = ''; for (const ch of s) { if (bytes(out + ch) > max) break; out += ch; } return out; };
 const ICON = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const CHECK = ICON('<path d="M5 12.5l4.5 4.5L19 7.5"/>');
-const dateParts = (t = Date.now()) => { const d = new Date(t); return [d.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' }).toLocaleUpperCase(lang === 'tr' ? 'tr-TR' : 'en-US'), d.toLocaleTimeString(lang === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })]; };
+const dateParts = (t = Date.now()) => { const d = new Date(t); return [d.toLocaleDateString(LOCALE[lang], { day: 'numeric', month: 'short' }).replace('.', '').toLocaleUpperCase(LOCALE[lang]), d.toLocaleTimeString(LOCALE[lang], { hour: '2-digit', minute: '2-digit' })]; };
 const green = () => getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#14907E';
 
 let toastTimer;
@@ -490,9 +530,9 @@ ROUTES.receipt = (d) => {
   screen(`<div class="flight"><svg class="trail" viewBox="0 0 354 300" preserveAspectRatio="none"><path d="M40 270 C 120 230, 110 120, 260 70" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round"/></svg>
 ${me.address ? `<div class="me">${idn(me.address, 50)}</div>` : ''}<div class="bird">${flying()}</div><div class="pm">${postmark(T.delivered, dateParts(d.t), green())}</div></div>
 <div class="slip"><div class="top">${idn(d.to, 34)}<b>${esc(d.name ? d.name + '.nim' : short(d.to))}</b><strong>${nim(d.value)} NIM</strong></div>
-<dl>${d.note ? `<dt>${esc(T.note)}</dt><dd class="hand">${esc(d.note.replace(/^ode:[0-9a-f]{8}\s*/, ''))}</dd>` : ''}<dt>${esc(T.fee)}</dt><dd>0 NIM</dd>${d.hash ? `<dt>${esc(T.tx)}</dt><dd class="mono" style="font-size:12px">${esc(d.hash.slice(0, 4) + ' ' + d.hash.slice(4, 8) + ' … ' + d.hash.slice(-4))}</dd>` : ''}</dl></div>`,
+<dl>${d.note ? `<dt>${esc(T.note)}</dt><dd class="hand">${esc(d.note.replace(/^ode:[0-9a-f]{8}\s*/, ''))}</dd>` : ''}<dt>${esc(T.fee)}</dt><dd>0 NIM</dd>${d.hash ? `<dt>${esc(T.tx)}</dt><dd class="mono" style="font-size:12px">${isHash(d.hash) ? txLink(d.hash) : esc(d.hash.slice(0, 4) + ' ' + d.hash.slice(4, 8) + ' … ' + d.hash.slice(-4))}</dd>` : ''}</dl></div>`,
   `<button class="btn" id="sh">${esc(T.share)}</button><button class="btn main" id="ok">${esc(T.done)}</button>`);
-  $('#sh').onclick = () => share(`${nim(d.value)} NIM → ${d.name ? d.name + '.nim' : pretty(d.to)}${d.hash ? '\n' + d.hash : ''}`);
+  $('#sh').onclick = () => share(`${nim(d.value)} NIM → ${d.name ? d.name + '.nim' : pretty(d.to)}${d.hash ? '\n' + (isHash(d.hash) ? txUrl(d.hash) : d.hash) : ''}`);
   $('#ok').onclick = () => { loadMe(); go('home'); };
 };
 
@@ -525,7 +565,7 @@ function ownRequest(r) {
   const link = reqLink(r.id);
   const lastPayer = r.payments.at(-1);
   screen(`${backBtn(T.tie)}<div class="tied"><div class="g">${r.status === 'paid' ? '' : perched()}</div><div class="tag"><b>${nim(r.value)} <span>NIM</span></b><div class="hand">${esc(r.note || ' ')}</div><code>${esc(link.replace(/^https?:\/\//, ''))}</code></div></div>
-<p class="hint">${esc(T.reqHint)}</p>
+${r.payments.length ? paidSlip(r) : `<p class="hint">${esc(T.reqHint)}</p>`}
 <div class="window" id="win"><div class="frame"><div class="g">${r.status === 'paid' ? flying() : perched()}</div></div><div style="min-width:0"><b>${lastPayer ? esc(lastPayer.fromName ? lastPayer.fromName + '.nim' : short(lastPayer.from)) : ' '}</b><small>${esc(r.status === 'paid' ? T.back : T.atWindow)} · ${nim(r.paid)}/${nim(r.value)} NIM</small></div>${statusPill(r.status)}</div>`,
   `<button class="btn" id="cp">${esc(T.copy)}</button><button class="btn main" id="sh">${esc(T.share)}</button>`);
   $('#cp').onclick = () => copy(link);
@@ -539,7 +579,7 @@ function incoming(r) {
   const ring = r.toName ? `<span class="ok">${CHECK}${esc(T.ringIs(r.toName + '.nim'))}</span>` : `<span class="ok warn">${esc(T.noRingWarn)}</span>`;
   screen(`<div class="sill"><div class="frame"></div><div class="board"></div><div class="g">${flying()}</div></div>
 <div class="open"><div class="from">${idn(r.to, 26)}<b>${esc(from)}</b> ${esc(T.sentYou)}</div>${r.note ? `<div class="hand">${esc(r.note)}</div>` : ''}<b class="t">${nim(left || r.value)} NIM</b>${ring}
-${r.status === 'paid' ? `<span class="ok">${CHECK}${esc(T.alreadyPaid)}</span>` : ''}<small class="hint mono">${esc(short(r.to))}</small></div>`,
+${r.status === 'paid' ? `<span class="ok">${CHECK}${esc(T.alreadyPaid)}</span>` : ''}<small class="hint mono">${esc(short(r.to))}</small></div>${r.payments.length ? paidSlip(r) : ''}`,
   r.status === 'paid' ? `<button class="btn main" id="no">${esc(T.done)}</button>` : `<button class="btn" id="no">${esc(T.notNow)}</button><button class="btn main" id="pay">${nim(left)} NIM ${esc(T.pay)}</button>`);
   $('#no').onclick = () => go('home');
   const pay = $('#pay');
@@ -630,7 +670,7 @@ ROUTES.name = async () => {
   const reg = await api('/api/registry').catch(() => ({ open: false }));
   let state = null;
   screen(`${backBtn(T.ringT)}<div class="ringstage" id="br"></div>
-<div class="namebox"><input id="nm" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="32" placeholder="${esc(lang === 'tr' ? 'isim' : 'name')}"><em>.nim</em></div><span id="st"></span>
+<div class="namebox"><input id="nm" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="32" placeholder="${esc(T.subPh)}"><em>.nim</em></div><span id="st"></span>
 <div class="recipe" id="rc"></div><p class="hint">${esc(reg.open ? T.ringHint : T.closed)}</p>
 <details class="gift" hidden><summary>${esc(T.giftQ)}</summary><div class="namebox"><input id="hk" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="24" placeholder="${esc(T.giftPh)}"></div><span id="hkSt"></span></details>
 <details class="gift pick" id="pick" hidden><summary>${esc(T.pickQ)}</summary><div id="pickList"></div><p class="hint">${esc(T.pickHint)}</p></details>
@@ -640,7 +680,7 @@ ${me.name && !me.name.includes('.') ? `<details class="gift sub"><summary>${esc(
   recipe('', 0);
   const face = await identicon(me.address).catch(() => '');
   const showRing = (name, info, animate) => {
-    const r = ring({ name: name || (lang === 'tr' ? 'isim' : 'name'), identicon: face, serial: info?.index || null, year: info?.since ? new Date(info.since).getFullYear() : new Date().getFullYear() });
+    const r = ring({ name: name || T.subPh, identicon: face, serial: info?.index || null, year: info?.since ? new Date(info.since).getFullYear() : new Date().getFullYear() });
     const box = $('#br'); if (!box) return Promise.resolve();
     box.innerHTML = r.svg; box.classList.toggle('empty', !name);
     return animate ? r.play(box) : (r.still(box), Promise.resolve());
@@ -783,15 +823,18 @@ async function start() {
   sky.innerHTML = `<i class="cloud" style="left:-20px;top:70px"></i><i class="cloud" style="right:-10px;top:120px;transform:scale(.7)"></i>` + [[10, 70], [30, 40], [80, 170], [55, 90], [88, 60], [24, 150]].map(([x, y]) => `<i class="star" style="left:${x}%;top:${y}px"></i>`).join('') + sahneHTML();
   document.body.prepend(sky);
   const temaBtn = document.createElement('button'); temaBtn.className = 'temabtn'; temaBtn.type = 'button';
-  const temaAd = () => temaBtn.setAttribute('aria-label', isNight() ? (lang === 'tr' ? 'Gündüze geç' : 'Switch to day') : (lang === 'tr' ? 'Geceye geç' : 'Switch to night'));
+  const temaAd = () => temaBtn.setAttribute('aria-label', isNight() ? ({ tr: 'Gündüze geç', es: 'Cambiar a día' }[lang] || 'Switch to day') : ({ tr: 'Geceye geç', es: 'Cambiar a noche' }[lang] || 'Switch to night'));
   const temaDegis = () => { const t = isNight() ? 'gunduz' : 'gece'; document.documentElement.dataset.tema = t; try { localStorage.setItem('pg_tema', t); } catch {} temaAd(); };
   // slow switch on desktop (sun and moon turn), instant on phones and in Nimiq Pay
   temaBtn.onclick = () => { if (!matchMedia('(min-width: 1000px) and (hover: hover)').matches) return temaDegis(); if (temaBtn.classList.contains('don')) return; temaBtn.classList.add('don'); setTimeout(temaDegis, 280); setTimeout(() => temaBtn.classList.remove('don'), 720); };
   temaAd(); document.body.append(temaBtn);
   const dilBtn = document.createElement('button'); dilBtn.className = 'dilbtn'; dilBtn.type = 'button';
-  const dilAd = () => { dilBtn.innerHTML = `<b${lang === 'tr' ? ' class="on"' : ''}>TR</b><b${lang === 'en' ? ' class="on"' : ''}>EN</b>`; dilBtn.setAttribute('aria-label', lang === 'tr' ? 'Switch to English' : 'Türkçeye geç'); };
+  // one button, three languages: a tap moves to the next one (EN → ES → TR)
+  const DIL_AD = { en: 'English', es: 'Español', tr: 'Türkçe' };
+  const sonraki = () => LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+  const dilAd = () => { dilBtn.innerHTML = LANGS.map((l) => `<b${lang === l ? ' class="on"' : ''}>${l.toUpperCase()}</b>`).join(''); dilBtn.setAttribute('aria-label', DIL_AD[sonraki()]); };
   dilBtn.onclick = () => {
-    const l = lang === 'tr' ? 'en' : 'tr';
+    const l = sonraki();
     try { localStorage.setItem('pg_dil', l); } catch {}
     setLang(l, true); dilAd(); temaAd();
     const s = history.state; render(s?.view || 'home', s?.data);

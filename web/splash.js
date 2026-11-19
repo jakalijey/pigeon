@@ -87,7 +87,7 @@ export function playSplash({ title, tagline, ready }) {
     const kE = ease(span(t, T.fold));
     shadow.setAttribute('rx', 26 - 8 * kE); shadow.setAttribute('cy', 96 - 6 * kE);
     leg.setAttribute('stroke-dashoffset', 16 * (1 - ease(span(t, T.leg))));
-    eye.setAttribute('r', 2.5 * back(span(t, T.eye)));
+    eye.setAttribute('r', Math.max(0, 2.5 * back(span(t, T.eye))));
     const h = span(t, T.ring), hy = -20 + 99 * bounce(h);
     const tr = `translate(42.9 ${hy.toFixed(2)}) rotate(${(-8 * (1 - h)).toFixed(2)})`;
     ringBack.setAttribute('transform', tr); ringFront.setAttribute('transform', tr);
