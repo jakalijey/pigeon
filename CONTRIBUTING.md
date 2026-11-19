@@ -24,14 +24,14 @@ The web build reads the Identicons from `server/node_modules`, so install the se
 Run them before you send a change; GitHub runs the same ones on every push and pull request.
 
 ```bash
-cd server && npm test    # name registry rules and vault owners
-cd sdk && npm test       # nim.js and hive-db.js, with a fake wallet and a fake server
-cd web && npm run build  # the app bundles without errors
+(cd server && npm test)    # name registry rules and vault owners
+(cd sdk && npm test)       # nim.js and hive-db.js, with a fake wallet and a fake server
+(cd web && npm run build)  # the app bundles without errors
 ```
 
 Hive has its own tests against a local server in demo mode; see [hive/README.md](hive/README.md#tests). GitHub runs `test-db.mjs` and `test-giris.mjs`.
 
-Add a test when you change a rule or the SDK. The tests need no network and no real wallet.
+Add a test when you change a rule or the SDK. No test needs a real wallet or real money.
 
 ## What to keep in mind
 

@@ -52,12 +52,15 @@ jobs:
 
   hive:
     runs-on: ubuntu-latest
+    # Hive and its tests sign with @nimiq/core; they take the one the server installs
+    env:
+      NIMIQ_CORE: file://${{ github.workspace }}/server/node_modules/@nimiq/core/nodejs/index.mjs
+      IDENTICONS: ${{ github.workspace }}/server/node_modules/@nimiq/identicons/dist/identicons.bundle.min.js
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # Hive signs in with @nimiq/core; it takes the one the server installs
       - run: npm ci
         working-directory: server
       # demo mode on a throwaway data folder: sample names and a demo wallet, no real money
@@ -65,8 +68,6 @@ jobs:
         working-directory: hive
         run: |
           mkdir -p "$RUNNER_TEMP/hive-data"
-          NIMIQ_CORE="file://$GITHUB_WORKSPACE/server/node_modules/@nimiq/core/nodejs/index.mjs" \
-          IDENTICONS="$GITHUB_WORKSPACE/server/node_modules/@nimiq/identicons/dist/identicons.bundle.min.js" \
           DATA_DIR="$RUNNER_TEMP/hive-data" node server.mjs > "$RUNNER_TEMP/hive.log" 2>&1 &
           for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:5197/api/hive && exit 0; sleep 1; done
           cat "$RUNNER_TEMP/hive.log"; exit 1
